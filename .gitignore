@@ -10,3 +10,7 @@ wheels/
 .venv
 
 .python-version
+
+# F13 — local sqlite event log; session data, not source.
+ti-dash.db
+
