@@ -47,15 +47,17 @@ currently does for the turn clock alone (`Game.elapsed`, `start_turn`,
 ```python
 @dataclass
 class Clock:
-    duration: float | None = None   # seconds; None = stopwatch (no countdown)
-    banked: float = 0.0             # accumulated seconds from prior run(s)
-    started_at: float | None = None # time.monotonic() timestamp, or None if stopped
+    duration: float | None = None  # seconds; None = stopwatch (no countdown)
+    banked: float = 0.0  # accumulated seconds from prior run(s)
+    started_at: float | None = None  # time.monotonic() timestamp, or None if stopped
 
-    def start(self) -> None: ...            # no-op if already running
-    def stop(self) -> None: ...             # folds running time into `banked`
+    def start(self) -> None: ...  # no-op if already running
+    def stop(self) -> None: ...  # folds running time into `banked`
     def reset(self, duration: float | None = None) -> None: ...  # banked=0, stopped
-    def elapsed(self) -> float: ...          # banked + (now - started_at if running)
-    def remaining(self) -> float | None: ... # duration - elapsed(); None if no duration
+    def elapsed(self) -> float: ...  # banked + (now - started_at if running)
+    def remaining(
+        self,
+    ) -> float | None: ...  # duration - elapsed(); None if no duration
     @property
     def running(self) -> bool: ...
 ```
@@ -89,12 +91,12 @@ the auth *identity* stays in main.py where storage lives.
 ```python
 @dataclass
 class TimerConfig:
-    turn_seconds: float = 180.0            # F2/F12 — per-turn action timer
-    secondary_seconds: float = 60.0        # F5 — secondary strategy action window
-    status_phase_seconds: float = 120.0    # F7 — per-person status phase timer
-    agenda_reveal_seconds: float = 60.0    # F8 — "when/after an agenda is revealed"
-    agenda_vote_seconds: float = 90.0      # F8 — per-person vote timer
-    admin_password: str = ""               # F9 — shared secret gating admin mode
+    turn_seconds: float = 180.0  # F2/F12 — per-turn action timer
+    secondary_seconds: float = 60.0  # F5 — secondary strategy action window
+    status_phase_seconds: float = 120.0  # F7 — per-person status phase timer
+    agenda_reveal_seconds: float = 60.0  # F8 — "when/after an agenda is revealed"
+    agenda_vote_seconds: float = 90.0  # F8 — per-person vote timer
+    admin_password: str = ""  # F9 — shared secret gating admin mode
     warn_at: tuple[float, ...] = (60.0, 10.0)  # F3 — seconds-remaining sound cues
 ```
 
@@ -110,8 +112,10 @@ New module `db.py`, stdlib `sqlite3` only:
 
 ```python
 class EventStore:
-    def __init__(self, path: str | Path) -> None: ...   # opens/creates db, runs migrations
-    def append(self, entry: LogEntry) -> None: ...        # one INSERT
+    def __init__(
+        self, path: str | Path
+    ) -> None: ...  # opens/creates db, runs migrations
+    def append(self, entry: LogEntry) -> None: ...  # one INSERT
     def phase_totals(self, round: int | None = None) -> dict[str, float]: ...
     def player_totals(self) -> dict[str, float]: ...
     def close(self) -> None: ...
@@ -141,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
 @dataclass
 class Game:
     ...
-    sink: Callable[[LogEntry], None] | None = None   # set by main.py at startup
+    sink: Callable[[LogEntry], None] | None = None  # set by main.py at startup
 ```
 
 `Game.note(...)` (renamed/extended, see §2) builds a `LogEntry`, appends it to
@@ -173,8 +177,9 @@ class Player:
     tactic: int = 3
     fleet: int = 3
     strategy: int = 2
-    turn_clock: Clock = field(default_factory=Clock)      # replaces `banked: float`
-    claim_token: str | None = None                          # F9
+    turn_clock: Clock = field(default_factory=Clock)  # replaces `banked: float`
+    claim_token: str | None = None  # F9
+
 
 @dataclass
 class LogEntry:
@@ -185,7 +190,8 @@ class LogEntry:
     player: str | None = None
     payload: dict = field(default_factory=dict)
     ts: float = field(default_factory=time.time)
-    silent: bool = False   # True = persisted but not shown in the session-log panel
+    silent: bool = False  # True = persisted but not shown in the session-log panel
+
 
 @dataclass
 class Game:
@@ -196,12 +202,12 @@ class Game:
     vp_goal: int = 10
     active: int | None = None
     log: list[LogEntry] = field(default_factory=list)
-    config: TimerConfig = field(default_factory=TimerConfig)   # F16
-    paused: bool = False                                         # F10
-    phase_clock: Clock = field(default_factory=Clock)            # F14
-    status_clocks: dict[str, Clock] = field(default_factory=dict)   # F7, per player name
-    secondary_clock: Clock | None = None                          # F5
-    agenda_clock: Clock | None = None                             # F8
+    config: TimerConfig = field(default_factory=TimerConfig)  # F16
+    paused: bool = False  # F10
+    phase_clock: Clock = field(default_factory=Clock)  # F14
+    status_clocks: dict[str, Clock] = field(default_factory=dict)  # F7, per player name
+    secondary_clock: Clock | None = None  # F5
+    agenda_clock: Clock | None = None  # F8
     sink: Callable[[LogEntry], None] | None = None
 ```
 
@@ -291,6 +297,7 @@ def start_secondary(self) -> None:
     self.secondary_clock = Clock(duration=self.config.secondary_seconds)
     self.secondary_clock.start()
 
+
 def clear_secondary(self) -> None:
     self.secondary_clock = None
 ```
@@ -351,6 +358,7 @@ def start_status_clock(self, player: Player) -> None:
     clock.reset(self.config.status_phase_seconds)
     clock.start()
 
+
 def stop_status_clock(self, player: Player) -> None:
     if clock := self.status_clocks.get(player.name):
         clock.stop()
@@ -374,6 +382,7 @@ Two independent clocks on `Game`, mirroring `secondary_clock`:
 def start_agenda_reveal(self) -> None:
     self.agenda_clock = Clock(duration=self.config.agenda_reveal_seconds)
     self.agenda_clock.start()
+
 
 def start_agenda_vote(self, player: Player) -> None:
     clock = self.status_clocks.setdefault(player.name, Clock())  # reuse per-player map
@@ -403,11 +412,17 @@ def claim_seat(self, player: Player, device_id: str) -> None:
     player.claim_token = device_id
     self.note(f"{player.name}'s seat claimed", kind="claim_seat", player=player.name)
 
-def unclaim_seat(self, player: Player, device_id: str, *, is_admin: bool = False) -> None:
+
+def unclaim_seat(
+    self, player: Player, device_id: str, *, is_admin: bool = False
+) -> None:
     if not is_admin and player.claim_token != device_id:
         raise PermissionError("not your seat")
     player.claim_token = None
-    self.note(f"{player.name}'s seat unclaimed", kind="unclaim_seat", player=player.name)
+    self.note(
+        f"{player.name}'s seat unclaimed", kind="unclaim_seat", player=player.name
+    )
+
 
 def authorize(self, player: Player, device_id: str, *, is_admin: bool) -> None:
     if not is_admin and player.claim_token != device_id:
@@ -459,6 +474,7 @@ def pause(self) -> None:
         self.agenda_clock.stop()
     self.note("Game paused", kind="pause")
 
+
 def resume(self) -> None:
     if not self.paused:
         return
@@ -494,7 +510,9 @@ def reset_turn_clock(self, player: Player, *, is_admin: bool) -> None:
     player.turn_clock.reset(self.config.turn_seconds)
     if self.active is not None and self.players[self.active] is player:
         player.turn_clock.start()
-    self.note(f"{player.name}'s turn timer reset", kind="turn_reset", player=player.name)
+    self.note(
+        f"{player.name}'s turn timer reset", kind="turn_reset", player=player.name
+    )
 ```
 
 Tests:
@@ -563,7 +581,8 @@ def set_phase(self, phase: str) -> None:
     if self.phase_clock.running:
         self.note(
             f"{self.phase} phase lasted {self.phase_clock.elapsed():.0f}s",
-            kind="phase_span", payload={"duration": self.phase_clock.elapsed()},
+            kind="phase_span",
+            payload={"duration": self.phase_clock.elapsed()},
             silent=True,
         )
     self.phase_clock.reset()
@@ -595,7 +614,8 @@ def end_turn(self) -> None:
         player.turn_clock.stop()
         self.note(
             f"{player.name}'s turn lasted {player.turn_clock.elapsed():.0f}s",
-            kind="turn_span", player=player.name,
+            kind="turn_span",
+            player=player.name,
             payload={"duration": player.turn_clock.elapsed()},
             silent=True,
         )
@@ -701,8 +721,10 @@ def fake_clock(monkeypatch):
     """Controllable replacement for time.monotonic() across game.py."""
     state = {"t": 0.0}
     monkeypatch.setattr("game.time.monotonic", lambda: state["t"])
+
     def advance(seconds: float) -> None:
         state["t"] += seconds
+
     return advance
 ```
 
