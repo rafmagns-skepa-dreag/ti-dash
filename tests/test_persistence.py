@@ -31,7 +31,9 @@ def test_event_store_creates_db_file_and_schema(tmp_path) -> None:
 
 def test_append_persists_row_with_expected_columns(tmp_path) -> None:
     store = EventStore(tmp_path / "events.db")
-    entry = LogEntry(round=2, phase="Action", text="Ana scored 1 VP", kind="note", player="Ana")
+    entry = LogEntry(
+        round=2, phase="Action", text="Ana scored 1 VP", kind="note", player="Ana"
+    )
 
     store.append(entry)
 
@@ -58,16 +60,34 @@ def test_phase_totals_sums_phase_span_events_by_phase() -> None:
     store = EventStore.in_memory()
     store.append(
         LogEntry(
-            round=1, phase="Strategy", text="x", kind="phase_span", payload={"duration": 30.0}
+            round=1,
+            phase="Strategy",
+            text="x",
+            kind="phase_span",
+            payload={"duration": 30.0},
         )
     )
     store.append(
-        LogEntry(round=1, phase="Action", text="x", kind="phase_span", payload={"duration": 10.0})
+        LogEntry(
+            round=1,
+            phase="Action",
+            text="x",
+            kind="phase_span",
+            payload={"duration": 10.0},
+        )
     )
     store.append(
-        LogEntry(round=2, phase="Action", text="x", kind="phase_span", payload={"duration": 20.0})
+        LogEntry(
+            round=2,
+            phase="Action",
+            text="x",
+            kind="phase_span",
+            payload={"duration": 20.0},
+        )
     )
-    store.append(LogEntry(round=1, phase="Action", text="x", kind="note"))  # not a phase_span
+    store.append(
+        LogEntry(round=1, phase="Action", text="x", kind="note")
+    )  # not a phase_span
 
     totals = store.phase_totals()
 
@@ -78,10 +98,22 @@ def test_phase_totals_sums_phase_span_events_by_phase() -> None:
 def test_phase_totals_can_be_scoped_to_a_round() -> None:
     store = EventStore.in_memory()
     store.append(
-        LogEntry(round=1, phase="Action", text="x", kind="phase_span", payload={"duration": 10.0})
+        LogEntry(
+            round=1,
+            phase="Action",
+            text="x",
+            kind="phase_span",
+            payload={"duration": 10.0},
+        )
     )
     store.append(
-        LogEntry(round=2, phase="Action", text="x", kind="phase_span", payload={"duration": 20.0})
+        LogEntry(
+            round=2,
+            phase="Action",
+            text="x",
+            kind="phase_span",
+            payload={"duration": 20.0},
+        )
     )
 
     assert store.phase_totals(round=1) == {"Action": 10.0}
@@ -131,7 +163,9 @@ def test_append_failure_does_not_raise(tmp_path) -> None:
     store = EventStore(tmp_path / "events.db")
     store.close()  # break the connection so the next append() fails internally
 
-    store.append(LogEntry(round=1, phase="Strategy", text="should not raise", kind="note"))
+    store.append(
+        LogEntry(round=1, phase="Strategy", text="should not raise", kind="note")
+    )
 
 
 def test_game_sink_receives_every_mutation() -> None:

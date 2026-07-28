@@ -217,7 +217,9 @@ def test_next_turn_starts_first_player_when_none_active(game: Game, fake_clock) 
     assert game.active == 0
 
 
-def test_next_turn_advances_to_next_unpassed_in_initiative_order(game: Game, fake_clock) -> None:
+def test_next_turn_advances_to_next_unpassed_in_initiative_order(
+    game: Game, fake_clock
+) -> None:
     game.start_turn(game.players[0])
     game.next_turn()
     assert game.active == 1
@@ -268,7 +270,9 @@ def test_toggle_pass_logs_passed_and_un_passed(game: Game) -> None:
     assert "Ana un-passed" in game.log[0]
 
 
-def test_toggle_pass_auto_advances_off_the_passing_active_player(game: Game, fake_clock) -> None:
+def test_toggle_pass_auto_advances_off_the_passing_active_player(
+    game: Game, fake_clock
+) -> None:
     p0 = game.players[0]
     game.start_turn(p0)
 
@@ -278,7 +282,9 @@ def test_toggle_pass_auto_advances_off_the_passing_active_player(game: Game, fak
     assert game.active == 1
 
 
-def test_toggle_pass_on_non_active_player_does_not_change_active(game: Game, fake_clock) -> None:
+def test_toggle_pass_on_non_active_player_does_not_change_active(
+    game: Game, fake_clock
+) -> None:
     game.start_turn(game.players[0])
     game.toggle_pass(game.players[2])
 
@@ -305,7 +311,9 @@ def test_set_phase_ends_turn_when_leaving_action(game: Game, fake_clock) -> None
     assert game.players[0].banked == 5.0
 
 
-def test_set_phase_does_not_end_turn_when_entering_action(game: Game, fake_clock) -> None:
+def test_set_phase_does_not_end_turn_when_entering_action(
+    game: Game, fake_clock
+) -> None:
     game.set_phase("Action")
     game.start_turn(game.players[0])
     game.set_phase("Action")
@@ -334,7 +342,9 @@ def test_advance_phase_from_agenda_starts_new_round(game: Game, fake_clock) -> N
 # --- new_round --------------------------------------------------------------------
 
 
-def test_new_round_clears_strategy_cards_and_passed_flags(game: Game, fake_clock) -> None:
+def test_new_round_clears_strategy_cards_and_passed_flags(
+    game: Game, fake_clock
+) -> None:
     for i, p in enumerate(game.players):
         game.assign_card(p, i + 1)
         p.passed = True

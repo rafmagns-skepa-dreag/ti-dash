@@ -131,8 +131,12 @@ def victory_track() -> None:
     """
     with ui.element("div").classes("panel w-full p-4"):
         with ui.row().classes("items-baseline gap-3 mb-3"):
-            ui.label("Victory Track").classes("imperial text-sm").style(f"color:{BRASS}")
-            ui.label(f"first to {game.vp_goal}").classes("text-xs").style(f"color:{DIM}")
+            ui.label("Victory Track").classes("imperial text-sm").style(
+                f"color:{BRASS}"
+            )
+            ui.label(f"first to {game.vp_goal}").classes("text-xs").style(
+                f"color:{DIM}"
+            )
 
         with ui.row().classes("w-full gap-[3px] no-wrap"):
             for step in range(game.vp_goal + 1):
@@ -142,12 +146,16 @@ def victory_track() -> None:
                     ui.label(str(step)).classes("num text-[11px]").style(
                         f"color:{BRASS if is_goal else DIM}"
                     )
-                    with ui.element("div").classes(
-                        "w-full rounded flex flex-col items-center justify-end gap-[3px] p-1"
-                    ).style(
-                        f"min-height:74px;"
-                        f"background:{RAISED if here else '#12102a'};"
-                        f"border:1px solid {BRASS + '66' if is_goal else '#2a2758'}"
+                    with (
+                        ui.element("div")
+                        .classes(
+                            "w-full rounded flex flex-col items-center justify-end gap-[3px] p-1"
+                        )
+                        .style(
+                            f"min-height:74px;"
+                            f"background:{RAISED if here else '#12102a'};"
+                            f"border:1px solid {BRASS + '66' if is_goal else '#2a2758'}"
+                        )
                     ):
                         for p in here:
                             ui.element("div").classes("rounded-full").style(
@@ -162,7 +170,11 @@ def victory_track() -> None:
 def admin_login_dialog(device_id: str) -> None:
     with ui.dialog() as dialog, ui.card().style(f"background:{PANEL}"):
         ui.label("Admin login").classes("imperial text-sm").style(f"color:{BRASS}")
-        password = ui.input("Password", password=True).props("dense outlined dark").classes("w-64")
+        password = (
+            ui.input("Password", password=True)
+            .props("dense outlined dark")
+            .classes("w-64")
+        )
 
         def submit() -> None:
             if password.value == game.config.admin_password:
@@ -186,12 +198,18 @@ def settings_dialog(is_admin: bool) -> None:
         ui.label("Timer settings").classes("imperial text-sm").style(f"color:{BRASS}")
         fields = {
             "turn_seconds": ui.number("Turn timer (s)", value=cfg.turn_seconds),
-            "secondary_seconds": ui.number("Secondary action (s)", value=cfg.secondary_seconds),
-            "status_phase_seconds": ui.number("Status phase (s)", value=cfg.status_phase_seconds),
+            "secondary_seconds": ui.number(
+                "Secondary action (s)", value=cfg.secondary_seconds
+            ),
+            "status_phase_seconds": ui.number(
+                "Status phase (s)", value=cfg.status_phase_seconds
+            ),
             "agenda_reveal_seconds": ui.number(
                 "Agenda reveal (s)", value=cfg.agenda_reveal_seconds
             ),
-            "agenda_vote_seconds": ui.number("Agenda vote (s)", value=cfg.agenda_vote_seconds),
+            "agenda_vote_seconds": ui.number(
+                "Agenda vote (s)", value=cfg.agenda_vote_seconds
+            ),
         }
         for widget in fields.values():
             widget.props("dense outlined dark").classes("w-64")
@@ -227,21 +245,29 @@ def report_dialog() -> None:
     with ui.dialog() as dialog, ui.card().style(f"background:{PANEL}").classes("w-96"):
         ui.label("Session report").classes("imperial text-sm").style(f"color:{BRASS}")
 
-        ui.label("Time per phase").classes("imperial text-[10px] mt-2").style(f"color:{DIM}")
+        ui.label("Time per phase").classes("imperial text-[10px] mt-2").style(
+            f"color:{DIM}"
+        )
         if phase_totals:
             for phase, seconds in sorted(phase_totals.items(), key=lambda kv: -kv[1]):
                 with ui.row().classes("w-full justify-between"):
                     ui.label(phase).classes("text-xs").style(f"color:{INK}")
-                    ui.label(format_clock(seconds)).classes("num text-xs").style(f"color:{BRASS}")
+                    ui.label(format_clock(seconds)).classes("num text-xs").style(
+                        f"color:{BRASS}"
+                    )
         else:
             ui.label("No phase data yet").classes("text-xs").style(f"color:{DIM}")
 
-        ui.label("Time per player").classes("imperial text-[10px] mt-3").style(f"color:{DIM}")
+        ui.label("Time per player").classes("imperial text-[10px] mt-3").style(
+            f"color:{DIM}"
+        )
         if player_totals:
             for name, seconds in sorted(player_totals.items(), key=lambda kv: -kv[1]):
                 with ui.row().classes("w-full justify-between"):
                     ui.label(name).classes("text-xs").style(f"color:{INK}")
-                    ui.label(format_clock(seconds)).classes("num text-xs").style(f"color:{BRASS}")
+                    ui.label(format_clock(seconds)).classes("num text-xs").style(
+                        f"color:{BRASS}"
+                    )
         else:
             ui.label("No turn data yet").classes("text-xs").style(f"color:{DIM}")
 
@@ -256,10 +282,14 @@ def report_dialog() -> None:
 def round_header(device_id: str, is_admin: bool) -> None:
     with ui.row().classes("w-full items-center justify-between"):
         with ui.column().classes("gap-0"):
-            ui.label("Twilight Imperium").classes("imperial text-xl").style(f"color:{BRASS}")
+            ui.label("Twilight Imperium").classes("imperial text-xl").style(
+                f"color:{BRASS}"
+            )
             leader = game.leader()
             subtitle = (
-                f"{leader.name} leads on {leader.vp}" if leader and leader.vp else "No points scored"
+                f"{leader.name} leads on {leader.vp}"
+                if leader and leader.vp
+                else "No points scored"
             )
             if game.paused:
                 subtitle = "Paused · " + subtitle
@@ -272,8 +302,12 @@ def round_header(device_id: str, is_admin: bool) -> None:
                 active = phase == game.phase
                 ui.button(
                     phase,
-                    on_click=lambda p=phase: guarded(lambda: game.set_phase(p, is_admin=is_admin)),
-                ).props("flat dense no-caps").classes("imperial text-[10px] px-2").style(
+                    on_click=lambda p=phase: guarded(
+                        lambda: game.set_phase(p, is_admin=is_admin)
+                    ),
+                ).props("flat dense no-caps").classes(
+                    "imperial text-[10px] px-2"
+                ).style(
                     f"color:{BRASS if active else DIM};"
                     f"background:{BRASS + '22' if active else 'transparent'}"
                 )
@@ -302,9 +336,11 @@ def round_header(device_id: str, is_admin: bool) -> None:
                     "Timer settings (admin)"
                 )
             else:
-                ui.button(icon="lock", on_click=lambda: admin_login_dialog(device_id)).props(
-                    "flat dense round size=sm"
-                ).style(f"color:{DIM}").tooltip("Admin login")
+                ui.button(
+                    icon="lock", on_click=lambda: admin_login_dialog(device_id)
+                ).props("flat dense round size=sm").style(f"color:{DIM}").tooltip(
+                    "Admin login"
+                )
 
 
 # --- Turn clock (F2, F3) ---------------------------------------------------
@@ -317,7 +353,9 @@ def turn_banner() -> None:
     if game.phase != "Action" or game.active is None:
         with ui.element("div").classes("panel w-full p-3"):
             ui.label(
-                "Action phase not running" if game.phase != "Action" else "No active turn"
+                "Action phase not running"
+                if game.phase != "Action"
+                else "No active turn"
             ).classes("imperial text-xs").style(f"color:{DIM}")
         return
 
@@ -325,10 +363,16 @@ def turn_banner() -> None:
     remaining = p.turn_clock.remaining()
     overtime = remaining is not None and remaining < 0
     color = RED if overtime else COLORS[p.color]
-    display = format_clock(remaining) if remaining is not None else format_clock(p.turn_clock.elapsed())
+    display = (
+        format_clock(remaining)
+        if remaining is not None
+        else format_clock(p.turn_clock.elapsed())
+    )
 
-    with ui.element("div").classes("panel w-full p-3").style(
-        f"border-color:{color}88; background:{color}14"
+    with (
+        ui.element("div")
+        .classes("panel w-full p-3")
+        .style(f"border-color:{color}88; background:{color}14")
     ):
         with ui.row().classes("w-full items-center justify-between no-wrap"):
             with ui.row().classes("items-center gap-3"):
@@ -336,7 +380,9 @@ def turn_banner() -> None:
                     f"width:12px;height:12px;background:{color}"
                 )
                 with ui.column().classes("gap-0"):
-                    ui.label(f"{p.name} is up").classes("imperial text-sm").style(f"color:{INK}")
+                    ui.label(f"{p.name} is up").classes("imperial text-sm").style(
+                        f"color:{INK}"
+                    )
                     ui.label(p.faction).classes("text-xs").style(f"color:{DIM}")
             ui.label(display).classes("num text-2xl").style(f"color:{color}")
             ui.button("End turn", on_click=lambda: guarded(game.next_turn)).props(
@@ -350,10 +396,14 @@ def secondary_banner() -> None:
     if game.secondary_clock is None:
         return
     remaining = game.secondary_clock.remaining()
-    with ui.row().classes("w-full items-center justify-between panel p-2").style(
-        f"border-color:{BRASS}55"
+    with (
+        ui.row()
+        .classes("w-full items-center justify-between panel p-2")
+        .style(f"border-color:{BRASS}55")
     ):
-        ui.label("Secondary action window").classes("imperial text-[10px]").style(f"color:{DIM}")
+        ui.label("Secondary action window").classes("imperial text-[10px]").style(
+            f"color:{DIM}"
+        )
         ui.label(format_clock(remaining) if remaining is not None else "").classes(
             "num text-sm"
         ).style(f"color:{BRASS}")
@@ -365,7 +415,9 @@ def secondary_banner() -> None:
 @ui.refreshable
 def status_banner() -> None:
     """F7 — one countdown chip per player with a running status clock."""
-    running = {name: clock for name, clock in game.status_clocks.items() if clock.running}
+    running = {
+        name: clock for name, clock in game.status_clocks.items() if clock.running
+    }
     if game.phase != "Status" or not running:
         return
     with ui.row().classes("w-full items-center gap-2 flex-wrap"):
@@ -373,9 +425,9 @@ def status_banner() -> None:
             remaining = clock.remaining()
             with ui.row().classes("items-center gap-1 px-2 py-1 rounded panel"):
                 ui.label(name).classes("text-[11px]").style(f"color:{INK}")
-                ui.label(format_clock(remaining) if remaining is not None else "").classes(
-                    "num text-xs"
-                ).style(f"color:{BRASS}")
+                ui.label(
+                    format_clock(remaining) if remaining is not None else ""
+                ).classes("num text-xs").style(f"color:{BRASS}")
 
 
 @ui.refreshable
@@ -385,10 +437,14 @@ def agenda_banner() -> None:
         return
     if game.agenda_clock is not None:
         remaining = game.agenda_clock.remaining()
-        with ui.row().classes("w-full items-center justify-between panel p-2").style(
-            f"border-color:{BRASS}55"
+        with (
+            ui.row()
+            .classes("w-full items-center justify-between panel p-2")
+            .style(f"border-color:{BRASS}55")
         ):
-            ui.label("Agenda reveal").classes("imperial text-[10px]").style(f"color:{DIM}")
+            ui.label("Agenda reveal").classes("imperial text-[10px]").style(
+                f"color:{DIM}"
+            )
             ui.label(format_clock(remaining) if remaining is not None else "").classes(
                 "num text-sm"
             ).style(f"color:{BRASS}")
@@ -405,7 +461,9 @@ def counter(label: str, value: int, on_change, color: str) -> None:
             ui.button(icon="remove", on_click=lambda: on_change(-1)).props(
                 "flat dense round size=xs"
             ).style(f"color:{DIM}")
-            ui.label(str(value)).classes("num text-base w-5 text-center").style(f"color:{color}")
+            ui.label(str(value)).classes("num text-base w-5 text-center").style(
+                f"color:{color}"
+            )
             ui.button(icon="add", on_click=lambda: on_change(1)).props(
                 "flat dense round size=xs"
             ).style(f"color:{DIM}")
@@ -419,9 +477,13 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
     claimed_by_other = p.claim_token is not None and not owned_by_me
     can_act = is_admin or owned_by_me
 
-    with ui.element("div").classes("panel p-3").style(
-        f"border-color:{color + 'aa' if is_active else '#2a2758'};"
-        f"opacity:{0.55 if p.passed else 1}"
+    with (
+        ui.element("div")
+        .classes("panel p-3")
+        .style(
+            f"border-color:{color + 'aa' if is_active else '#2a2758'};"
+            f"opacity:{0.55 if p.passed else 1}"
+        )
     ):
         # Identity row
         with ui.row().classes("w-full items-center justify-between no-wrap mb-2"):
@@ -431,14 +493,18 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 )
                 with ui.column().classes("gap-0"):
                     ui.label(p.name).classes("imperial text-sm").style(f"color:{INK}")
-                    ui.label(p.faction).classes("text-[11px] leading-tight").style(f"color:{DIM}")
+                    ui.label(p.faction).classes("text-[11px] leading-tight").style(
+                        f"color:{DIM}"
+                    )
             with ui.column().classes("items-end gap-1"):
                 if is_speaker:
                     chip("Speaker")
                 if p.passed:
                     chip("Passed", DIM)
                 if claimed_by_other:
-                    ui.icon("lock").style(f"color:{DIM}").tooltip("Claimed by another device")
+                    ui.icon("lock").style(f"color:{DIM}").tooltip(
+                        "Claimed by another device"
+                    )
 
         ui.element("div").classes("rule w-full mb-2")
 
@@ -446,26 +512,29 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
         with ui.row().classes("w-full mb-2"):
             if p.claim_token is None:
                 ui.button(
-                    "Claim seat", on_click=lambda p=p: guarded(lambda: game.claim_seat(p, device_id))
-                ).props("flat dense no-caps size=sm").classes("imperial text-[10px]").style(
-                    f"color:{BRASS}"
-                )
+                    "Claim seat",
+                    on_click=lambda p=p: guarded(lambda: game.claim_seat(p, device_id)),
+                ).props("flat dense no-caps size=sm").classes(
+                    "imperial text-[10px]"
+                ).style(f"color:{BRASS}")
             elif owned_by_me:
                 ui.button(
                     "Unclaim seat",
-                    on_click=lambda p=p: guarded(lambda: game.unclaim_seat(p, device_id)),
-                ).props("flat dense no-caps size=sm").classes("imperial text-[10px]").style(
-                    f"color:{DIM}"
-                )
+                    on_click=lambda p=p: guarded(
+                        lambda: game.unclaim_seat(p, device_id)
+                    ),
+                ).props("flat dense no-caps size=sm").classes(
+                    "imperial text-[10px]"
+                ).style(f"color:{DIM}")
             elif is_admin:
                 ui.button(
                     "Unclaim (admin)",
                     on_click=lambda p=p: guarded(
                         lambda: game.unclaim_seat(p, device_id, is_admin=True)
                     ),
-                ).props("flat dense no-caps size=sm").classes("imperial text-[10px]").style(
-                    f"color:{DIM}"
-                )
+                ).props("flat dense no-caps size=sm").classes(
+                    "imperial text-[10px]"
+                ).style(f"color:{DIM}")
 
         if claimed_by_other and not is_admin:
             # F9: claimed-by-others seats show identity but no action row.
@@ -477,7 +546,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
 
         # Victory points
         with ui.row().classes("w-full items-center justify-between no-wrap mb-2"):
-            ui.label("Victory points").classes("imperial text-[10px]").style(f"color:{DIM}")
+            ui.label("Victory points").classes("imperial text-[10px]").style(
+                f"color:{DIM}"
+            )
             with ui.row().classes("items-center gap-1 no-wrap"):
                 ui.button(
                     icon="remove",
@@ -485,7 +556,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                         lambda: game.score(p, -1, device_id, is_admin=is_admin)
                     ),
                 ).props("flat dense round size=sm").style(f"color:{DIM}")
-                ui.label(str(p.vp)).classes("num text-2xl w-8 text-center").style(f"color:{color}")
+                ui.label(str(p.vp)).classes("num text-2xl w-8 text-center").style(
+                    f"color:{color}"
+                )
                 ui.button(
                     icon="add",
                     on_click=lambda p=p: guarded(
@@ -517,7 +590,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 "Trade",
                 p.trade_goods,
                 lambda d, p=p: guarded(
-                    lambda: game.adjust_counter(p, "trade_goods", d, device_id, is_admin=is_admin)
+                    lambda: game.adjust_counter(
+                        p, "trade_goods", d, device_id, is_admin=is_admin
+                    )
                 ),
                 BRASS,
             )
@@ -525,7 +600,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 "Tactic",
                 p.tactic,
                 lambda d, p=p: guarded(
-                    lambda: game.adjust_counter(p, "tactic", d, device_id, is_admin=is_admin)
+                    lambda: game.adjust_counter(
+                        p, "tactic", d, device_id, is_admin=is_admin
+                    )
                 ),
                 INK,
             )
@@ -533,7 +610,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 "Fleet",
                 p.fleet,
                 lambda d, p=p: guarded(
-                    lambda: game.adjust_counter(p, "fleet", d, device_id, is_admin=is_admin)
+                    lambda: game.adjust_counter(
+                        p, "fleet", d, device_id, is_admin=is_admin
+                    )
                 ),
                 INK,
             )
@@ -541,7 +620,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 "Strat",
                 p.strategy,
                 lambda d, p=p: guarded(
-                    lambda: game.adjust_counter(p, "strategy", d, device_id, is_admin=is_admin)
+                    lambda: game.adjust_counter(
+                        p, "strategy", d, device_id, is_admin=is_admin
+                    )
                 ),
                 INK,
             )
@@ -553,9 +634,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 on_click=lambda p=p: guarded(
                     lambda: game.start_turn(p, device_id, is_admin=is_admin)
                 ),
-            ).props("flat dense no-caps size=sm").classes("imperial text-[10px] flex-1").style(
-                f"color:{color}"
-            )
+            ).props("flat dense no-caps size=sm").classes(
+                "imperial text-[10px] flex-1"
+            ).style(f"color:{color}")
             ui.button(
                 "Un-pass" if p.passed else "Pass",
                 on_click=lambda p=p: guarded(
@@ -569,7 +650,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 on_click=lambda p=p: guarded(
                     lambda: game.pass_speaker(p, device_id, is_admin=is_admin)
                 ),
-            ).props("flat dense round size=sm").style(f"color:{DIM}").tooltip("Make Speaker")
+            ).props("flat dense round size=sm").style(f"color:{DIM}").tooltip(
+                "Make Speaker"
+            )
             if is_admin:
                 ui.button(
                     icon="restart_alt",
@@ -581,7 +664,9 @@ def player_card(p, device_id: str, is_admin: bool) -> None:
                 )
 
         mins = int(p.turn_clock.elapsed()) // 60
-        ui.label(f"{mins} min at the table").classes("num text-[10px] mt-1").style(f"color:{DIM}")
+        ui.label(f"{mins} min at the table").classes("num text-[10px] mt-1").style(
+            f"color:{DIM}"
+        )
 
 
 # --- Roster management ----------------------------------------------------
@@ -594,7 +679,9 @@ def add_player_dialog() -> None:
 
         taken = {p.color for p in game.players}
         free = [c for c in COLORS if c not in taken] or list(COLORS)
-        color = ui.select(free, value=free[0]).props("dense outlined dark").classes("w-64")
+        color = (
+            ui.select(free, value=free[0]).props("dense outlined dark").classes("w-64")
+        )
 
         def on_faction_change(e) -> None:
             # F4 — presets pre-select a color but never remove the ability to
@@ -604,13 +691,20 @@ def add_player_dialog() -> None:
                 color.value = preset
 
         faction = (
-            ui.select(list(FACTIONS), value=FACTIONS[0], with_input=True, on_change=on_faction_change)
+            ui.select(
+                list(FACTIONS),
+                value=FACTIONS[0],
+                with_input=True,
+                on_change=on_faction_change,
+            )
             .props("dense outlined dark")
             .classes("w-64")
         )
 
         if FACTION_PRESETS:
-            ui.label("Quick picks").classes("imperial text-[9px] mt-1").style(f"color:{DIM}")
+            ui.label("Quick picks").classes("imperial text-[9px] mt-1").style(
+                f"color:{DIM}"
+            )
             with ui.row().classes("gap-1 flex-wrap w-64"):
                 for preset_faction in list(FACTION_PRESETS)[:6]:
 
@@ -660,8 +754,10 @@ def dashboard() -> None:
             round_header(device_id, admin)
 
             if winner := game.winner():
-                with ui.element("div").classes("panel w-full p-4").style(
-                    f"border-color:{BRASS}; background:{BRASS}18"
+                with (
+                    ui.element("div")
+                    .classes("panel w-full p-4")
+                    .style(f"border-color:{BRASS}; background:{BRASS}18")
                 ):
                     ui.label(f"{winner.name} wins the Imperium").classes(
                         "imperial text-lg"
@@ -677,18 +773,28 @@ def dashboard() -> None:
             order = [p for p in game.initiative_order() if p.strategy_card]
             if order:
                 with ui.row().classes("items-center gap-2 flex-wrap"):
-                    ui.label("Initiative").classes("imperial text-[10px]").style(f"color:{DIM}")
+                    ui.label("Initiative").classes("imperial text-[10px]").style(
+                        f"color:{DIM}"
+                    )
                     for p in order:
-                        with ui.row().classes("items-center gap-1 px-2 py-1 rounded").style(
-                            f"background:{RAISED};border:1px solid {COLORS[p.color]}55"
+                        with (
+                            ui.row()
+                            .classes("items-center gap-1 px-2 py-1 rounded")
+                            .style(
+                                f"background:{RAISED};border:1px solid {COLORS[p.color]}55"
+                            )
                         ):
                             ui.label(str(p.strategy_card)).classes("num text-xs").style(
                                 f"color:{COLORS[p.color]}"
                             )
-                            ui.label(p.name).classes("text-[11px]").style(f"color:{INK}")
+                            ui.label(p.name).classes("text-[11px]").style(
+                                f"color:{INK}"
+                            )
 
-            with ui.grid().classes("w-full gap-3").style(
-                "grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))"
+            with (
+                ui.grid()
+                .classes("w-full gap-3")
+                .style("grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))")
             ):
                 for p in game.initiative_order():
                     player_card(p, device_id, admin)
@@ -700,12 +806,20 @@ def dashboard() -> None:
                 ui.button(
                     "New round",
                     on_click=lambda: guarded(lambda: game.new_round(is_admin=admin)),
-                ).props("flat dense no-caps").classes("imperial text-[10px]").style(f"color:{DIM}")
+                ).props("flat dense no-caps").classes("imperial text-[10px]").style(
+                    f"color:{DIM}"
+                )
 
             if game.log:
-                with ui.expansion("Session log").classes("w-full text-xs").style(f"color:{DIM}"):
+                with (
+                    ui.expansion("Session log")
+                    .classes("w-full text-xs")
+                    .style(f"color:{DIM}")
+                ):
                     for entry in game.log[:25]:
-                        ui.label(str(entry)).classes("num text-[11px]").style(f"color:{DIM}")
+                        ui.label(str(entry)).classes("num text-[11px]").style(
+                            f"color:{DIM}"
+                        )
 
     board()
 

@@ -24,7 +24,9 @@ def test_last_player_passing_advances_to_status_phase(game: Game, fake_clock) ->
     assert game.active is None
 
 
-def test_passing_during_non_action_phase_does_not_advance(game: Game, fake_clock) -> None:
+def test_passing_during_non_action_phase_does_not_advance(
+    game: Game, fake_clock
+) -> None:
     assert game.phase == "Strategy"
     game.toggle_pass(game.players[0])
     assert game.phase == "Strategy"

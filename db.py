@@ -5,8 +5,6 @@ module entirely; the two are connected only through the `Game.sink` callable
 (see `game.Game.note`). This module is the only place allowed to touch disk.
 """
 
-from __future__ import annotations
-
 import json
 import sqlite3
 import sys

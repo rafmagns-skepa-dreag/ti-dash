@@ -10,8 +10,6 @@ persisted go through the `Game.sink` callable (see `Game.note`), the same
 persistence.
 """
 
-from __future__ import annotations
-
 import time
 from dataclasses import dataclass, field, fields
 from typing import Callable
@@ -41,71 +39,37 @@ COLORS: dict[str, str] = {
     "Orange": "#e08a3c",
     "Pink": "#e07ab0",
     "Black": "#8b8fa3",
+    # TODO magenta
 }
 
-# F1 (Thunder's Edge factions) is deliberately NOT implemented here.
-# SPEC.md §3/F1 and §6 flag Thunder's Edge as "blocked on data": there is no
-# verified faction list for it (box insert / rules PDF / BGG page) available
-# to this change, and the spec explicitly says not to fabricate faction
-# names. Once a verified list exists, adding it is a pure data change to the
-# FACTIONS tuple below (see SPEC.md F1 for the exact shape expected).
 FACTIONS = (
-    "The Arborec",
-    "The Barony of Letnev",
-    "The Clan of Saar",
     "The Embers of Muaat",
-    "The Emirates of Hacan",
-    "The Federation of Sol",
-    "The Ghosts of Creuss",
-    "The L1Z1X Mindnet",
-    "The Mentak Coalition",
     "The Naalu Collective",
-    "The Nekro Virus",
-    "Sardakk N'orr",
-    "The Universities of Jol-Nar",
-    "The Winnu",
-    "The Xxcha Kingdom",
-    "The Yin Brotherhood",
-    "The Yssaril Tribes",
-    # Prophecy of Kings
-    "The Argent Flight",
-    "The Empyrean",
-    "The Mahact Gene-Sorcerers",
-    "The Naaz-Rokha Alliance",
-    "The Nomad",
-    "The Titans of Ul",
-    "The Vuil'Raith Cabal",
     "The Council Keleres",
+    # Thunder's Edge
+    "Last Bastion",
+    "The Ral Nel Consortium",
+    "The Deepwrought Scholarate",
+    "The Crimson Rebellion",
+    "The Firmament",
 )
 
-# F4 — named (faction -> suggested color) presets shown as quick-pick chips in
-# add_player_dialog(). Purely a dialog default; the player can still override
-# the color manually. Kept small and drawn from well-known box-art pairings
-# rather than trying to cover every faction.
-FACTION_PRESETS: dict[str, str] = {
-    "The Federation of Sol": "Blue",
-    "The Barony of Letnev": "Red",
-    "The Emirates of Hacan": "Yellow",
-    "The Xxcha Kingdom": "Green",
-    "The Arborec": "Green",
-    "The Yssaril Tribes": "Purple",
-    "The Mentak Coalition": "Orange",
-    "The Naalu Collective": "Pink",
-    "The Clan of Saar": "Orange",
-    "The Universities of Jol-Nar": "Blue",
-    "The L1Z1X Mindnet": "Black",
-    "The Nekro Virus": "Black",
-    "Sardakk N'orr": "Red",
-    "The Ghosts of Creuss": "Purple",
-    "The Embers of Muaat": "Red",
-    "The Winnu": "Yellow",
-    "The Yin Brotherhood": "Black",
-}
+FACTION_PRESETS: tuple[tuple[str, str, str], ...] = (
+    ("Imogen", "The Naalu Collective", "Green"),
+    ("Summer", "The Embers of Muaat", "Orange"),
+    ("Pavle", "The Ral Nel Consortium", "Black"),
+    ("Gil", "The Crimson Rebellion", "Red"),
+    ("Jim", "The Deepwrought Scholarate", "Blue"),
+    ("Izzy", "The Council Keleres", "Magenta"),
+    ("Rich", "The Firmament", "Purple"),
+    ("Dani", "Last Bastion", "Yellow"),
+)
 
 
 # --- Clock ------------------------------------------------------------------
 
 
+# TODO clock triggers on secondary when choosing a strategy card. that's.... very wrong
 @dataclass
 class Clock:
     """A duration that starts running, can be stopped/banked, resumed, and
@@ -142,7 +106,9 @@ class Clock:
         self.duration = duration
 
     def elapsed(self) -> float:
-        running = time.monotonic() - self.started_at if self.started_at is not None else 0.0
+        running = (
+            time.monotonic() - self.started_at if self.started_at is not None else 0.0
+        )
         return self.banked + running
 
     def remaining(self) -> float | None:
@@ -166,7 +132,7 @@ class TimerConfig:
     status_phase_seconds: float = 120.0  # F7 — per-person status phase timer
     agenda_reveal_seconds: float = 60.0  # F8 — "when/after an agenda is revealed"
     agenda_vote_seconds: float = 90.0  # F8 — per-person vote timer
-    admin_password: str = ""  # F9 — shared secret gating admin mode
+    admin_password: str = "password"  # F9 — shared secret gating admin mode
     warn_at: tuple[float, ...] = (60.0, 10.0)  # F3 — seconds-remaining sound cues
 
 
@@ -245,7 +211,9 @@ class Game:
     config: TimerConfig = field(default_factory=TimerConfig)  # F16
     paused: bool = False  # F10
     phase_clock: Clock = field(default_factory=Clock)  # F14
-    status_clocks: dict[str, Clock] = field(default_factory=dict)  # F7, F8 (vote); per player name
+    status_clocks: dict[str, Clock] = field(
+        default_factory=dict
+    )  # F7, F8 (vote); per player name
     secondary_clock: Clock | None = None  # F5
     agenda_clock: Clock | None = None  # F8
     sink: Callable[[LogEntry], None] | None = None  # F13 — set by main.py at startup
@@ -333,16 +301,24 @@ class Game:
         if player.claim_token is not None and player.claim_token != device_id:
             raise PermissionError(f"{player.name}'s seat is already claimed")
         player.claim_token = device_id
-        self.note(f"{player.name}'s seat claimed", kind="claim_seat", player=player.name)
+        self.note(
+            f"{player.name}'s seat claimed", kind="claim_seat", player=player.name
+        )
 
-    def unclaim_seat(self, player: Player, device_id: str, *, is_admin: bool = False) -> None:
+    def unclaim_seat(
+        self, player: Player, device_id: str, *, is_admin: bool = False
+    ) -> None:
         self._check_not_paused()
         if not is_admin and player.claim_token != device_id:
             raise PermissionError("not your seat")
         player.claim_token = None
-        self.note(f"{player.name}'s seat unclaimed", kind="unclaim_seat", player=player.name)
+        self.note(
+            f"{player.name}'s seat unclaimed", kind="unclaim_seat", player=player.name
+        )
 
-    def authorize(self, player: Player, device_id: str | None = None, *, is_admin: bool = False) -> None:
+    def authorize(
+        self, player: Player, device_id: str | None = None, *, is_admin: bool = False
+    ) -> None:
         """Raise PermissionError unless `is_admin` or the caller owns this
         seat.
 
@@ -359,7 +335,12 @@ class Game:
     # -- scoring / cards / speaker (player-scoped actions, F9-guarded) ---------
 
     def score(
-        self, player: Player, delta: int, device_id: str | None = None, *, is_admin: bool = False
+        self,
+        player: Player,
+        delta: int,
+        device_id: str | None = None,
+        *,
+        is_admin: bool = False,
     ) -> None:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
@@ -418,8 +399,12 @@ class Game:
         """
         self._check_not_paused()
         current_speaker = self.players[self.speaker] if self.players else None
-        if not is_admin and (current_speaker is None or current_speaker.claim_token != device_id):
-            raise PermissionError("only admin or the current speaker can pass the speaker token")
+        if not is_admin and (
+            current_speaker is None or current_speaker.claim_token != device_id
+        ):
+            raise PermissionError(
+                "only admin or the current speaker can pass the speaker token"
+            )
         self.speaker = self.players.index(player)
         self.note(f"{player.name} is now Speaker")
 
@@ -492,7 +477,11 @@ class Game:
         self.authorize(player, device_id, is_admin=is_admin)
         player.passed = not player.passed
         self.note(f"{player.name} {'passed' if player.passed else 'un-passed'}")
-        if player.passed and self.active is not None and self.players[self.active] is player:
+        if (
+            player.passed
+            and self.active is not None
+            and self.players[self.active] is player
+        ):
             self.next_turn()
 
     # -- phases (F6, F9, F14) ---------------------------------------------------
@@ -632,7 +621,9 @@ class Game:
         player.turn_clock.reset(self.config.turn_seconds)
         if self.active is not None and self.players[self.active] is player:
             player.turn_clock.start()
-        self.note(f"{player.name}'s turn timer reset", kind="turn_reset", player=player.name)
+        self.note(
+            f"{player.name}'s turn timer reset", kind="turn_reset", player=player.name
+        )
 
     # -- F16: config ----------------------------------------------------------------
 
@@ -653,12 +644,7 @@ class Game:
     @classmethod
     def demo(cls) -> Game:
         game = cls()
-        for name, faction, color in [
-            ("Ana", "The Emirates of Hacan", "Yellow"),
-            ("Bo", "The Federation of Sol", "Blue"),
-            ("Cass", "The Nekro Virus", "Red"),
-            ("Dev", "The Xxcha Kingdom", "Green"),
-        ]:
+        for name, faction, color in FACTION_PRESETS:
             game.add_player(name, faction, color)
         game.log.clear()
         return game

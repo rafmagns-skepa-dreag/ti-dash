@@ -78,7 +78,9 @@ def test_reset_turn_clock_requires_admin(game: Game) -> None:
         game.reset_turn_clock(p, is_admin=False)
 
 
-def test_reset_turn_clock_on_active_player_restarts_running(game: Game, fake_clock) -> None:
+def test_reset_turn_clock_on_active_player_restarts_running(
+    game: Game, fake_clock
+) -> None:
     p = game.players[0]
     game.config.turn_seconds = 180.0
     game.start_turn(p)
@@ -90,7 +92,9 @@ def test_reset_turn_clock_on_active_player_restarts_running(game: Game, fake_clo
     assert p.turn_clock.remaining() == 180.0
 
 
-def test_reset_turn_clock_on_inactive_player_stays_stopped(game: Game, fake_clock) -> None:
+def test_reset_turn_clock_on_inactive_player_stays_stopped(
+    game: Game, fake_clock
+) -> None:
     active, other = game.players[0], game.players[1]
     game.start_turn(active)
     fake_clock(10.0)

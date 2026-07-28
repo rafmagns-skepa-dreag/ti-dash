@@ -84,14 +84,18 @@ def test_bare_clock_defaults_to_stopped_zero_banked_no_duration() -> None:
 # --- F12: turn clock is per-turn ------------------------------------------------
 
 
-def test_start_turn_always_resets_duration_to_current_config(game: Game, fake_clock) -> None:
+def test_start_turn_always_resets_duration_to_current_config(
+    game: Game, fake_clock
+) -> None:
     game.config.turn_seconds = 42.0
     game.start_turn(game.players[0])
     assert game.players[0].turn_clock.duration == 42.0
     assert game.players[0].turn_clock.remaining() == 42.0
 
 
-def test_changing_config_mid_turn_does_not_resize_running_clock(game: Game, fake_clock) -> None:
+def test_changing_config_mid_turn_does_not_resize_running_clock(
+    game: Game, fake_clock
+) -> None:
     game.config.turn_seconds = 100.0
     game.start_turn(game.players[0])
 
@@ -103,7 +107,9 @@ def test_changing_config_mid_turn_does_not_resize_running_clock(game: Game, fake
 # --- F5: secondary strategy action timer ----------------------------------------
 
 
-def test_start_secondary_creates_running_clock_with_configured_duration(game: Game) -> None:
+def test_start_secondary_creates_running_clock_with_configured_duration(
+    game: Game,
+) -> None:
     game.config.secondary_seconds = 45.0
     game.start_secondary()
 
