@@ -94,15 +94,13 @@ def create_app(db_path: str) -> Litestar:
     @post("/action/claim_seat")
     async def claim_seat(request: Request, seat: int) -> Response:
         did = device_id_of(request)
-        await state.apply(lambda g: g.claim_seat(g.players[seat], did))
-        return Response(content="", status_code=204)
+        return await _guarded(state, lambda g: g.claim_seat(g.players[seat], did))
 
     @post("/action/release_seat")
     async def release_seat(request: Request, seat: int) -> Response:
         did = device_id_of(request)
         admin = is_admin_of(request)
-        await state.apply(lambda g: g.release_seat(g.players[seat], did, is_admin=admin))
-        return Response(content="", status_code=204)
+        return await _guarded(state, lambda g: g.release_seat(g.players[seat], did, is_admin=admin))
 
     @post("/action/toggle_pause")
     async def toggle_pause() -> Response:
@@ -131,8 +129,7 @@ def create_app(db_path: str) -> Litestar:
 
     @post("/action/begin_pick")
     async def begin_pick(request: Request, seat: int) -> Response:
-        did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.begin_strategy_pick(g.players[seat], did, is_admin=admin))
+        return await _guarded(state, lambda g: g.begin_strategy_pick(g.players[seat]))
 
     @post("/action/end_turn")
     async def end_turn(request: Request, seat: int) -> Response:

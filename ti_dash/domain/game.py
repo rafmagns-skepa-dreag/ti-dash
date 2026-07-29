@@ -29,7 +29,7 @@ class Game:
     agenda_vote_clock: Clock = field(default_factory=Clock)
 
     _sequence: int = 0
-    _resume_clock: "Clock | None" = None
+    _resume_clocks: list = field(default_factory=list)
     _turn_no: int = 0
 
     # -- orderings --------------------------------------------------------
@@ -52,6 +52,10 @@ class Game:
     def claim_seat(self, player: Player, device_id: str) -> None:
         if player.claim_token is not None and player.claim_token != device_id:
             raise PermissionError(f"{player.name}'s seat is already claimed")
+        # Release any other seat currently owned by this device
+        for other in self.players:
+            if other is not player and other.claim_token == device_id:
+                other.claim_token = None
         player.claim_token = device_id
 
     def release_seat(self, player: Player, device_id: str, *, is_admin: bool = False) -> None:
@@ -74,17 +78,16 @@ class Game:
         return next((c for c in self._all_clocks() if c.running), None)
 
     def pause(self) -> None:
-        running = self.active_clock()
-        self._resume_clock = running
-        if running is not None:
-            running.stop()
+        self._resume_clocks = [c for c in self._all_clocks() if c.running]
+        for clock in self._resume_clocks:
+            clock.stop()
         self.paused = True
 
     def resume(self) -> None:
         self.paused = False
-        if self._resume_clock is not None:
-            self._resume_clock.start()
-            self._resume_clock = None
+        for clock in self._resume_clocks:
+            clock.start()
+        self._resume_clocks = []
 
     def _check_not_paused(self) -> None:
         if self.paused:
