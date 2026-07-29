@@ -9,6 +9,7 @@ dependencies = [
     "datastar-py>=1.0.2",
     "htpy>=26.5.1",
     "litestar>=2.24.0",
+    "uvicorn>=0.51.0",
 ]
 
 [dependency-groups]
