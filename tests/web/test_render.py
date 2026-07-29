@@ -15,7 +15,12 @@ def test_timer_fragment_has_id_and_signals():
     g = demo_running()
     html = render.timer_fragment(g)
     assert 'id="active-timer"' in html
-    assert "data-signals" in html or "data-signals-ends-at" in html
+    # Single data-signals JSON object; endsAt is referenced verbatim by the
+    # countdown expression (must match the declared signal name).
+    assert "data-signals=" in html
+    assert "endsAt" in html
+    assert "$endsAt" in html and "$now" in html
+    assert "data-text=" in html
 
 
 def test_players_fragment_lists_all_players():
@@ -31,6 +36,15 @@ def test_phasebar_shows_round_and_phase():
     html = render.phasebar_fragment(g)
     assert "Strategy" in html
     assert 'id="phasebar"' in html
+    # Datastar v1 event handler uses the colon form, not data-on-click.
+    assert "data-on:click" in html
+    assert "data-on-click" not in html
+
+
+def test_players_fragment_buttons_use_datastar_colon_form():
+    html = render.players_fragment(Game.demo())
+    assert "data-on:click" in html
+    assert "data-on-click" not in html
 
 
 def test_full_page_loads_datastar_and_embeds_fragments():
@@ -41,3 +55,8 @@ def test_full_page_loads_datastar_and_embeds_fragments():
     assert html.lower().count("<!doctype") == 1
     assert "datastar" in html.lower()
     assert 'id="players"' in html and 'id="phasebar"' in html
+    # The SSE stream is opened via data-init (runs on element load); a plain
+    # data-on-load never fires on <body> and would leave the page empty.
+    assert "data-init=" in html
+    assert "data-on-load" not in html
+    assert "data-on-interval" in html
