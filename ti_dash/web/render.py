@@ -69,4 +69,4 @@ def full_page(game: Game, *, is_admin: bool) -> str:
         htpy.div(id="active-timer")[""],
         htpy.div(id="players")[""],
     ]
-    return "<!doctype html>" + str(htpy.html[head, shell])
+    return f"<!doctype html>\n{htpy.html[head, shell]}"
