@@ -185,6 +185,62 @@ class Game:
             ended_at=time.time(),
         ))
 
+    def start_strategy_phase(self) -> None:
+        self.phase = "Strategy"
+        self.awaiting_admin = False
+        self.active = None
+
+    def start_status_phase(self) -> None:
+        self.phase = "Status"
+        self.awaiting_admin = False
+        self.active = None
+        self.status_clock.reset(self.config.budget_for("status"))
+        self.status_clock.start()
+
+    def end_status_phase(self) -> None:
+        self.status_clock.stop()
+        self._record("status", player=None, turn=None,
+                     duration=self.status_clock.elapsed())
+        self.awaiting_admin = True
+
+    def start_agenda_phase(self) -> None:
+        self.phase = "Agenda"
+        self.awaiting_admin = False
+
+    def open_agenda_window(self) -> None:
+        self.agenda_window_clock.reset(self.config.budget_for("agenda_window"))
+        self.agenda_window_clock.start()
+
+    def close_agenda_window(self) -> None:
+        self.agenda_window_clock.stop()
+        self._record("agenda_window", player=None, turn=None,
+                     duration=self.agenda_window_clock.elapsed())
+
+    def begin_agenda_vote(self, player) -> None:
+        self.agenda_vote_clock.reset(self.config.budget_for("agenda_vote"))
+        self.agenda_vote_clock.start()
+
+    def cast_agenda_vote(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        self.agenda_vote_clock.stop()
+        self._record("agenda_vote", player=player, turn=None,
+                     duration=self.agenda_vote_clock.elapsed())
+
+    def end_agenda_phase(self) -> None:
+        self.awaiting_admin = True
+
+    def new_round(self) -> None:
+        self.round += 1
+        for p in self.players:
+            p.strategy_card = None
+            p.passed = False
+        self.active = None
+        self.agenda_enabled_this_round = False
+        for c in self._all_clocks():
+            c.reset()
+        self.start_strategy_phase()
+
     # -- construction -----------------------------------------------------
     @classmethod
     def demo(cls) -> "Game":
