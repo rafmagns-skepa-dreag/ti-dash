@@ -40,6 +40,26 @@ class Game:
     def initiative_order(self) -> list[Player]:
         return sorted(self.players, key=lambda p: p.initiative)
 
+    # -- roster / seats ---------------------------------------------------
+    def add_player(self, name: str, faction: str, color: str) -> Player:
+        player = Player(name=name, faction=faction, color=color, seat=len(self.players))
+        self.players.append(player)
+        return player
+
+    def claim_seat(self, player: Player, device_id: str) -> None:
+        if player.claim_token is not None and player.claim_token != device_id:
+            raise PermissionError(f"{player.name}'s seat is already claimed")
+        player.claim_token = device_id
+
+    def release_seat(self, player: Player, device_id: str, *, is_admin: bool = False) -> None:
+        if not is_admin and player.claim_token != device_id:
+            raise PermissionError("not your seat")
+        player.claim_token = None
+
+    def authorize(self, player: Player, device_id: str | None, *, is_admin: bool) -> None:
+        if not is_admin and player.claim_token != device_id:
+            raise PermissionError(f"not authorized to act for {player.name}")
+
     # -- construction -----------------------------------------------------
     @classmethod
     def demo(cls) -> "Game":
