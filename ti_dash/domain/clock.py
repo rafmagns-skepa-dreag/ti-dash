@@ -29,7 +29,9 @@ class Clock:
         self.duration = duration
 
     def elapsed(self) -> float:
-        live = time.monotonic() - self.started_at if self.started_at is not None else 0.0
+        live = (
+            time.monotonic() - self.started_at if self.started_at is not None else 0.0
+        )
         return self.banked + live
 
     def remaining(self) -> float | None:

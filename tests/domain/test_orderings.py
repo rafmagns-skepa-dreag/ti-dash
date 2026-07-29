@@ -28,9 +28,9 @@ def test_seating_order_rotates_to_speaker():
 
 def test_initiative_order_by_card_number():
     g = make_game()
-    g.players[0].strategy_card = 6   # Ana
-    g.players[1].strategy_card = 1   # Bo
-    g.players[2].strategy_card = 3   # Cass
+    g.players[0].strategy_card = 6  # Ana
+    g.players[1].strategy_card = 1  # Bo
+    g.players[2].strategy_card = 3  # Cass
     g.players[3].strategy_card = None
     assert [p.name for p in g.initiative_order()] == ["Bo", "Cass", "Ana", "Dev"]
 

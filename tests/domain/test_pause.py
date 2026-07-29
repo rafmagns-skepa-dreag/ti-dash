@@ -53,12 +53,12 @@ def test_pause_stops_all_running_clocks_and_resume_restarts_them(monkeypatch):
     t = [0.0]
     monkeypatch.setattr(time, "monotonic", lambda: t[0])
     g = Game()
-    
+
     # Start both action_clock and secondary_clock
     g.action_clock.start()
     g.secondary_clock.start()
     t[0] = 30.0
-    
+
     # Pause should stop BOTH clocks
     g.pause()
     assert g.paused is True
@@ -66,18 +66,18 @@ def test_pause_stops_all_running_clocks_and_resume_restarts_them(monkeypatch):
     assert g.secondary_clock.running is False
     assert g.action_clock.elapsed() == 30.0
     assert g.secondary_clock.elapsed() == 30.0
-    
+
     # Advance time during pause - neither should count
     t[0] = 100.0
     assert g.action_clock.elapsed() == 30.0
     assert g.secondary_clock.elapsed() == 30.0
-    
+
     # Resume should restart BOTH clocks
     g.resume()
     assert g.paused is False
     assert g.action_clock.running is True
     assert g.secondary_clock.running is True
-    
+
     # Both should continue counting
     t[0] = 110.0
     assert g.action_clock.elapsed() == 40.0

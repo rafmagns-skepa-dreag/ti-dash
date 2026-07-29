@@ -18,7 +18,8 @@ def player_card(game: Game, p) -> htpy.Element:
         htpy.button(
             class_="claim",
             data_on_click=(
-                f"@post('/action/release_seat?seat={p.seat}')" if claimed
+                f"@post('/action/release_seat?seat={p.seat}')"
+                if claimed
                 else f"@post('/action/claim_seat?seat={p.seat}')"
             ),
         )["Release" if claimed else "Claim"],

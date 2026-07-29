@@ -58,20 +58,28 @@ class Game:
                 other.claim_token = None
         player.claim_token = device_id
 
-    def release_seat(self, player: Player, device_id: str, *, is_admin: bool = False) -> None:
+    def release_seat(
+        self, player: Player, device_id: str, *, is_admin: bool = False
+    ) -> None:
         if not is_admin and player.claim_token != device_id:
             raise PermissionError("not your seat")
         player.claim_token = None
 
-    def authorize(self, player: Player, device_id: str | None, *, is_admin: bool) -> None:
+    def authorize(
+        self, player: Player, device_id: str | None, *, is_admin: bool
+    ) -> None:
         if not is_admin and player.claim_token != device_id:
             raise PermissionError(f"not authorized to act for {player.name}")
 
     # -- pause/resume --------------------------------------------------------
     def _all_clocks(self) -> list[Clock]:
         return [
-            self.strategy_pick_clock, self.action_clock, self.secondary_clock,
-            self.status_clock, self.agenda_window_clock, self.agenda_vote_clock,
+            self.strategy_pick_clock,
+            self.action_clock,
+            self.secondary_clock,
+            self.status_clock,
+            self.agenda_window_clock,
+            self.agenda_vote_clock,
         ]
 
     def active_clock(self) -> "Clock | None":
@@ -112,8 +120,12 @@ class Game:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
         self.action_clock.stop()
-        self._record("action", player=player, turn=self._turn_no,
-                     duration=self.action_clock.elapsed())
+        self._record(
+            "action",
+            player=player,
+            turn=self._turn_no,
+            duration=self.action_clock.elapsed(),
+        )
         self._advance_action()
 
     def pass_turn(self, player, device_id=None, *, is_admin=False) -> None:
@@ -121,8 +133,12 @@ class Game:
         self.authorize(player, device_id, is_admin=is_admin)
         player.passed = True
         self.action_clock.stop()
-        self._record("action", player=player, turn=self._turn_no,
-                     duration=self.action_clock.elapsed())
+        self._record(
+            "action",
+            player=player,
+            turn=self._turn_no,
+            duration=self.action_clock.elapsed(),
+        )
         self._advance_action()
 
     def _advance_action(self) -> None:
@@ -131,7 +147,7 @@ class Game:
         current = self._current()
         # rotate order to start just after the current player
         idx = order.index(current) if current in order else -1
-        rotated = order[idx + 1:] + order[: idx + 1]
+        rotated = order[idx + 1 :] + order[: idx + 1]
         nxt = next((p for p in rotated if not p.passed), None)
         if nxt is None:
             self.action_clock.stop()
@@ -148,8 +164,12 @@ class Game:
 
     def close_secondary(self) -> None:
         self.secondary_clock.stop()
-        self._record("secondary", player=self._current(), turn=self._turn_no,
-                     duration=self.secondary_clock.elapsed())
+        self._record(
+            "secondary",
+            player=self._current(),
+            turn=self._turn_no,
+            duration=self.secondary_clock.elapsed(),
+        )
 
     def score(self, player, delta, device_id=None, *, is_admin=False) -> None:
         self._check_not_paused()
@@ -160,7 +180,9 @@ class Game:
         self.strategy_pick_clock.reset(self.config.budget_for("strategy_pick"))
         self.strategy_pick_clock.start()
 
-    def pick_strategy_card(self, player, card, device_id=None, *, is_admin=False) -> None:
+    def pick_strategy_card(
+        self, player, card, device_id=None, *, is_admin=False
+    ) -> None:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
         for other in self.players:
@@ -169,24 +191,30 @@ class Game:
         player.strategy_card = card
         self.strategy_pick_clock.stop()
         self._record(
-            "strategy_pick", player=player, turn=None,
+            "strategy_pick",
+            player=player,
+            turn=None,
             duration=self.strategy_pick_clock.elapsed(),
         )
 
-    def _record(self, context: str, *, player, turn: int | None, duration: float) -> None:
+    def _record(
+        self, context: str, *, player, turn: int | None, duration: float
+    ) -> None:
         self._sequence += 1
-        self.pending_records.append(TurnRecord(
-            sequence=self._sequence,
-            round=self.round,
-            turn=turn,
-            phase=self.phase,
-            context=context,
-            player_name=player.name if player is not None else None,
-            seat=player.seat if player is not None else None,
-            duration_seconds=duration,
-            over_budget=duration > self.config.budget_for(context),
-            ended_at=time.time(),
-        ))
+        self.pending_records.append(
+            TurnRecord(
+                sequence=self._sequence,
+                round=self.round,
+                turn=turn,
+                phase=self.phase,
+                context=context,
+                player_name=player.name if player is not None else None,
+                seat=player.seat if player is not None else None,
+                duration_seconds=duration,
+                over_budget=duration > self.config.budget_for(context),
+                ended_at=time.time(),
+            )
+        )
 
     def start_strategy_phase(self) -> None:
         self.phase = "Strategy"
@@ -202,8 +230,9 @@ class Game:
 
     def end_status_phase(self) -> None:
         self.status_clock.stop()
-        self._record("status", player=None, turn=None,
-                     duration=self.status_clock.elapsed())
+        self._record(
+            "status", player=None, turn=None, duration=self.status_clock.elapsed()
+        )
         self.awaiting_admin = True
 
     def start_agenda_phase(self) -> None:
@@ -216,8 +245,12 @@ class Game:
 
     def close_agenda_window(self) -> None:
         self.agenda_window_clock.stop()
-        self._record("agenda_window", player=None, turn=None,
-                     duration=self.agenda_window_clock.elapsed())
+        self._record(
+            "agenda_window",
+            player=None,
+            turn=None,
+            duration=self.agenda_window_clock.elapsed(),
+        )
 
     def begin_agenda_vote(self, player) -> None:
         self.agenda_vote_clock.reset(self.config.budget_for("agenda_vote"))
@@ -227,8 +260,12 @@ class Game:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
         self.agenda_vote_clock.stop()
-        self._record("agenda_vote", player=player, turn=None,
-                     duration=self.agenda_vote_clock.elapsed())
+        self._record(
+            "agenda_vote",
+            player=player,
+            turn=None,
+            duration=self.agenda_vote_clock.elapsed(),
+        )
 
     def end_agenda_phase(self) -> None:
         self.awaiting_admin = True

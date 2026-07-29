@@ -10,7 +10,7 @@ async def client(tmp_path):
 
 
 async def test_score_requires_owning_the_seat(client):
-    await client.get("/")                       # device A cookie
+    await client.get("/")  # device A cookie
     await client.post("/action/claim_seat", params={"seat": 0})
     # A owns seat 0; scoring seat 0 works
     r = await client.post("/action/score", params={"seat": 0, "delta": 2})
@@ -30,7 +30,7 @@ async def test_score_unauthorized_is_rejected(client):
 
 async def test_toggle_agenda_flag(client):
     await client.get("/")
-    await client.post("/action/admin_logout")   # ensure known state
+    await client.post("/action/admin_logout")  # ensure known state
     r = await client.post("/action/toggle_agenda")
     assert r.status_code in (200, 204)
 
@@ -48,7 +48,7 @@ async def test_claim_seat_conflict_returns_403_not_500(client):
     await client.get("/")
     r = await client.post("/action/claim_seat", params={"seat": 0})
     assert r.status_code in (200, 204)
-    
+
     # Device B tries to claim the same seat (different device_id cookie)
     async with AsyncTestClient(app=client.app) as client2:
         await client2.get("/")  # gets its own device_id cookie

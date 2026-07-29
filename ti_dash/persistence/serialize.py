@@ -4,10 +4,26 @@ from ti_dash.domain.config import TimerConfig
 from ti_dash.domain.game import Game
 from ti_dash.domain.models import Player
 
-_PLAYER_KEYS = ("name", "faction", "color", "seat", "vp", "strategy_card",
-                "passed", "claim_token")
-_GAME_KEYS = ("speaker", "round", "vp_goal", "phase", "awaiting_admin",
-              "active", "paused", "agenda_enabled_this_round")
+_PLAYER_KEYS = (
+    "name",
+    "faction",
+    "color",
+    "seat",
+    "vp",
+    "strategy_card",
+    "passed",
+    "claim_token",
+)
+_GAME_KEYS = (
+    "speaker",
+    "round",
+    "vp_goal",
+    "phase",
+    "awaiting_admin",
+    "active",
+    "paused",
+    "agenda_enabled_this_round",
+)
 
 
 def game_to_dict(game: Game) -> dict:

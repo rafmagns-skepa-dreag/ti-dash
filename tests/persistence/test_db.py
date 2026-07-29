@@ -28,7 +28,8 @@ async def test_save_and_load_snapshot(db):
 
 
 async def test_snapshot_is_single_row_upsert(db):
-    g = Game(); g.round = 1
+    g = Game()
+    g.round = 1
     await db.save_snapshot(g)
     g.round = 2
     await db.save_snapshot(g)
@@ -49,11 +50,17 @@ async def test_append_and_load_records(db):
 
 async def test_reconnect_keeps_records_and_snapshot(tmp_path):
     path = str(tmp_path / "t.db")
-    d1 = Database(path); await d1.connect()
-    g = Game(); g.round = 9; await d1.save_snapshot(g)
-    await d1.append_records([TurnRecord(1, 9, 0, "Action", "action", "Ana", 0, 5.0, False, 1.0)])
+    d1 = Database(path)
+    await d1.connect()
+    g = Game()
+    g.round = 9
+    await d1.save_snapshot(g)
+    await d1.append_records(
+        [TurnRecord(1, 9, 0, "Action", "action", "Ana", 0, 5.0, False, 1.0)]
+    )
     await d1.close()
-    d2 = Database(path); await d2.connect()
+    d2 = Database(path)
+    await d2.connect()
     assert (await d2.load_snapshot()).round == 9
     assert len(await d2.load_records()) == 1
     await d2.close()

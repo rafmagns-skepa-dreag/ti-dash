@@ -35,25 +35,35 @@ def players_fragment(game: Game) -> str:
 def phasebar_fragment(game: Game) -> str:
     active = game.players[game.active].name if game.active is not None else "—"
     gate = (
-        htpy.button(class_="gate", data_on_click="@post('/action/advance')")["Start next phase"]
-        if game.awaiting_admin else ""
+        htpy.button(class_="gate", data_on_click="@post('/action/advance')")[
+            "Start next phase"
+        ]
+        if game.awaiting_admin
+        else ""
     )
     pause_label = "Resume" if game.paused else "Pause"
-    return str(htpy.div(id="phasebar")[
-        htpy.span[f"Round {game.round}"],
-        htpy.span[f"Phase: {game.phase}"],
-        htpy.span[f"Active: {active}"],
-        htpy.span[f"Paused: {game.paused}"],
-        htpy.button(class_="pause", data_on_click="@post('/action/toggle_pause')")[pause_label],
-        gate,
-    ])
+    return str(
+        htpy.div(id="phasebar")[
+            htpy.span[f"Round {game.round}"],
+            htpy.span[f"Phase: {game.phase}"],
+            htpy.span[f"Active: {active}"],
+            htpy.span[f"Paused: {game.paused}"],
+            htpy.button(class_="pause", data_on_click="@post('/action/toggle_pause')")[
+                pause_label
+            ],
+            gate,
+        ]
+    )
 
 
 def full_page(game: Game, *, is_admin: bool) -> str:
     head = htpy.head[
         htpy.meta(charset="utf-8"),
         htpy.meta(name="viewport", content="width=device-width, initial-scale=1"),
-        htpy.script(type="module", src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js"),
+        htpy.script(
+            type="module",
+            src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js",
+        ),
         htpy.title["TI4 Dashboard"],
     ]
     # `now` is a client-side ms clock ticked every second; the timer fragment

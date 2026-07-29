@@ -1,17 +1,22 @@
 import asyncio
-from typing import Callable
+from collections.abc import Callable
 
+from datastar_py.litestar import (
+    DatastarResponse,
+    read_signals,
+)
+from datastar_py.litestar import (
+    ServerSentEventGenerator as SSE,
+)
 from litestar import Litestar, Request, get, post
 from litestar.exceptions import HTTPException
 from litestar.response import Response
 
-from datastar_py.litestar import DatastarResponse, ServerSentEventGenerator as SSE, read_signals
-
 from ti_dash.domain.game import Game
 from ti_dash.persistence.db import Database
-from ti_dash.web.broadcast import Broadcaster
-from ti_dash.web.identity import DEVICE_COOKIE, ADMIN_COOKIE, new_device_id
 from ti_dash.web import render
+from ti_dash.web.broadcast import Broadcaster
+from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
 
 
 class AppState:
@@ -100,11 +105,13 @@ def create_app(db_path: str) -> Litestar:
     async def release_seat(request: Request, seat: int) -> Response:
         did = device_id_of(request)
         admin = is_admin_of(request)
-        return await _guarded(state, lambda g: g.release_seat(g.players[seat], did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.release_seat(g.players[seat], did, is_admin=admin)
+        )
 
     @post("/action/toggle_pause")
     async def toggle_pause() -> Response:
-        await state.apply(lambda g: (g.resume() if g.paused else g.pause()))
+        await state.apply(lambda g: g.resume() if g.paused else g.pause())
         return Response(content="", status_code=204)
 
     @post("/action/advance")
@@ -115,17 +122,24 @@ def create_app(db_path: str) -> Litestar:
 
     @get("/action/debug_players")
     async def debug_players() -> Response:
-        return Response(content=render.players_fragment(state.game), media_type="text/html")
+        return Response(
+            content=render.players_fragment(state.game), media_type="text/html"
+        )
 
     @post("/action/score")
     async def score(request: Request, seat: int, delta: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.score(g.players[seat], delta, did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.score(g.players[seat], delta, did, is_admin=admin)
+        )
 
     @post("/action/pick_card")
     async def pick_card(request: Request, seat: int, card: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.pick_strategy_card(g.players[seat], card, did, is_admin=admin))
+        return await _guarded(
+            state,
+            lambda g: g.pick_strategy_card(g.players[seat], card, did, is_admin=admin),
+        )
 
     @post("/action/begin_pick")
     async def begin_pick(request: Request, seat: int) -> Response:
@@ -134,12 +148,16 @@ def create_app(db_path: str) -> Litestar:
     @post("/action/end_turn")
     async def end_turn(request: Request, seat: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.end_turn(g.players[seat], did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.end_turn(g.players[seat], did, is_admin=admin)
+        )
 
     @post("/action/pass_turn")
     async def pass_turn(request: Request, seat: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.pass_turn(g.players[seat], did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.pass_turn(g.players[seat], did, is_admin=admin)
+        )
 
     @post("/action/open_secondary")
     async def open_secondary() -> Response:
@@ -160,17 +178,25 @@ def create_app(db_path: str) -> Litestar:
     @post("/action/begin_vote")
     async def begin_vote(request: Request, seat: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.begin_agenda_vote(g.players[seat], did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.begin_agenda_vote(g.players[seat], did, is_admin=admin)
+        )
 
     @post("/action/cast_vote")
     async def cast_vote(request: Request, seat: int) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(state, lambda g: g.cast_agenda_vote(g.players[seat], did, is_admin=admin))
+        return await _guarded(
+            state, lambda g: g.cast_agenda_vote(g.players[seat], did, is_admin=admin)
+        )
 
     @post("/action/toggle_agenda")
     async def toggle_agenda() -> Response:
-        return await _guarded(state, lambda g: setattr(
-            g, "agenda_enabled_this_round", not g.agenda_enabled_this_round))
+        return await _guarded(
+            state,
+            lambda g: setattr(
+                g, "agenda_enabled_this_round", not g.agenda_enabled_this_round
+            ),
+        )
 
     @post("/action/admin_login")
     async def admin_login(request: Request) -> Response:
@@ -190,11 +216,29 @@ def create_app(db_path: str) -> Litestar:
         await state.load()
 
     return Litestar(
-        route_handlers=[index, events, claim_seat, release_seat, toggle_pause,
-                        advance, debug_players, score, pick_card, begin_pick,
-                        end_turn, pass_turn, open_secondary, close_secondary,
-                        open_agenda_window, close_agenda_window, begin_vote,
-                        cast_vote, toggle_agenda, admin_login, admin_logout],
+        route_handlers=[
+            index,
+            events,
+            claim_seat,
+            release_seat,
+            toggle_pause,
+            advance,
+            debug_players,
+            score,
+            pick_card,
+            begin_pick,
+            end_turn,
+            pass_turn,
+            open_secondary,
+            close_secondary,
+            open_agenda_window,
+            close_agenda_window,
+            begin_vote,
+            cast_vote,
+            toggle_agenda,
+            admin_login,
+            admin_logout,
+        ],
         on_startup=[_startup],
     )
 

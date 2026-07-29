@@ -56,12 +56,12 @@ def test_claiming_second_seat_releases_first():
     g = Game()
     p0 = g.add_player("Ana", "F", "Red")
     p1 = g.add_player("Bo", "F", "Blue")
-    
+
     # Device claims seat 0
     g.claim_seat(p0, "dev-1")
     assert p0.claim_token == "dev-1"
     assert p1.claim_token is None
-    
+
     # Same device claims seat 1 - should release seat 0
     g.claim_seat(p1, "dev-1")
     assert p0.claim_token is None

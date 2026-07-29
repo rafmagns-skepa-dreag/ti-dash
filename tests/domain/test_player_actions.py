@@ -36,8 +36,10 @@ def test_pick_records_strategy_pick_and_steals(monkeypatch):
     t = [0.0]
     monkeypatch.setattr(time, "monotonic", lambda: t[0])
     g = Game()
-    a = g.add_player("Ana", "F", "Red"); g.claim_seat(a, "d1")
-    b = g.add_player("Bo", "F", "Blue"); g.claim_seat(b, "d2")
+    a = g.add_player("Ana", "F", "Red")
+    g.claim_seat(a, "d1")
+    b = g.add_player("Bo", "F", "Blue")
+    g.claim_seat(b, "d2")
     g.begin_strategy_pick(a)
     t[0] = 25.0
     g.pick_strategy_card(a, 5, "d1")

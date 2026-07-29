@@ -23,14 +23,14 @@ def test_stop_banks_running_time_and_resume_continues(monkeypatch):
     t = [0.0]
     monkeypatch.setattr(time, "monotonic", lambda: t[0])
     c = Clock()
-    c.start()          # started_at=0
+    c.start()  # started_at=0
     t[0] = 90.0
-    c.stop()           # banked=90
+    c.stop()  # banked=90
     assert c.running is False
     assert c.elapsed() == 90.0
-    t[0] = 200.0       # time passes while stopped; must not count
+    t[0] = 200.0  # time passes while stopped; must not count
     assert c.elapsed() == 90.0
-    c.start()          # resume at 200
+    c.start()  # resume at 200
     t[0] = 210.0
     assert c.elapsed() == 100.0  # 90 banked + 10 live
 
@@ -41,7 +41,7 @@ def test_start_is_noop_if_already_running(monkeypatch):
     c = Clock()
     c.start()
     t[0] = 5.0
-    c.start()          # must not reset started_at
+    c.start()  # must not reset started_at
     t[0] = 10.0
     assert c.elapsed() == 10.0
 
