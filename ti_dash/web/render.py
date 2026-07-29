@@ -71,6 +71,7 @@ def full_page(game: Game, *, is_admin: bool) -> str:
     head = htpy.head[
         htpy.meta(charset="utf-8"),
         htpy.meta(name="viewport", content="width=device-width, initial-scale=1"),
+        htpy.link(rel="stylesheet", href="/app.css"),
         htpy.script(type="module", src=DATASTAR_SRC),
         htpy.title["TI4 Dashboard"],
     ]

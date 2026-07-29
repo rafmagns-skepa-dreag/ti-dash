@@ -18,7 +18,11 @@ def _on_click(expression: str) -> dict:
 def player_card(game: Game, p) -> htpy.Element:
     claimed = p.claim_token is not None
     action = "release_seat" if claimed else "claim_seat"
-    return htpy.div(class_="player-card", data_seat=str(p.seat))[
+    return htpy.div(
+        class_="player-card",
+        data_seat=str(p.seat),
+        style=f"border-left-color:{p.color}",
+    )[
         htpy.span(class_="swatch", style=f"background:{p.color}")[""],
         htpy.span(class_="name")[p.name],
         htpy.span(class_="faction")[p.faction],

@@ -17,6 +17,7 @@ from ti_dash.persistence.db import Database
 from ti_dash.web import render
 from ti_dash.web.broadcast import Broadcaster
 from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
+from ti_dash.web.styles import CSS
 
 
 class AppState:
@@ -76,6 +77,10 @@ def create_app(db_path: str) -> Litestar:
         if not did:
             resp.set_cookie(DEVICE_COOKIE, new_device_id())
         return resp
+
+    @get("/app.css")
+    async def stylesheet() -> Response:
+        return Response(content=CSS, media_type="text/css")
 
     @get("/events")
     async def events() -> DatastarResponse:
@@ -218,6 +223,7 @@ def create_app(db_path: str) -> Litestar:
     return Litestar(
         route_handlers=[
             index,
+            stylesheet,
             events,
             claim_seat,
             release_seat,

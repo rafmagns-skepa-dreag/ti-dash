@@ -31,3 +31,12 @@ async def test_toggle_pause_flips_state(client):
     await client.post("/action/toggle_pause")
     page = await client.get("/action/debug_players")  # any state read
     assert page.status_code == 200
+
+
+async def test_stylesheet_served_and_page_links_it(client):
+    resp = await client.get("/app.css")
+    assert resp.status_code == 200
+    assert "text/css" in resp.headers["content-type"]
+    assert ".player-card" in resp.text
+    page = await client.get("/")
+    assert '<link rel="stylesheet" href="/app.css">' in page.text
