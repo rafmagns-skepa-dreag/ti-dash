@@ -2,9 +2,10 @@ import asyncio
 from typing import Callable
 
 from litestar import Litestar, Request, get, post
+from litestar.exceptions import HTTPException
 from litestar.response import Response
 
-from datastar_py.litestar import DatastarResponse, ServerSentEventGenerator as SSE
+from datastar_py.litestar import DatastarResponse, ServerSentEventGenerator as SSE, read_signals
 
 from ti_dash.domain.game import Game
 from ti_dash.persistence.db import Database
@@ -52,6 +53,15 @@ def create_app(db_path: str) -> Litestar:
 
     def is_admin_of(request: Request) -> bool:
         return request.cookies.get(ADMIN_COOKIE) == "1"
+
+    async def _guarded(state: AppState, mutate: Callable[[Game], None]) -> Response:
+        try:
+            await state.apply(mutate)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return Response(content="", status_code=204)
 
     @get("/")
     async def index(request: Request) -> Response:
@@ -109,12 +119,85 @@ def create_app(db_path: str) -> Litestar:
     async def debug_players() -> Response:
         return Response(content=render.players_fragment(state.game), media_type="text/html")
 
+    @post("/action/score")
+    async def score(request: Request, seat: int, delta: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.score(g.players[seat], delta, did, is_admin=admin))
+
+    @post("/action/pick_card")
+    async def pick_card(request: Request, seat: int, card: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.pick_strategy_card(g.players[seat], card, did, is_admin=admin))
+
+    @post("/action/begin_pick")
+    async def begin_pick(request: Request, seat: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.begin_strategy_pick(g.players[seat], did, is_admin=admin))
+
+    @post("/action/end_turn")
+    async def end_turn(request: Request, seat: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.end_turn(g.players[seat], did, is_admin=admin))
+
+    @post("/action/pass_turn")
+    async def pass_turn(request: Request, seat: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.pass_turn(g.players[seat], did, is_admin=admin))
+
+    @post("/action/open_secondary")
+    async def open_secondary() -> Response:
+        return await _guarded(state, lambda g: g.open_secondary())
+
+    @post("/action/close_secondary")
+    async def close_secondary() -> Response:
+        return await _guarded(state, lambda g: g.close_secondary())
+
+    @post("/action/open_agenda_window")
+    async def open_agenda_window() -> Response:
+        return await _guarded(state, lambda g: g.open_agenda_window())
+
+    @post("/action/close_agenda_window")
+    async def close_agenda_window() -> Response:
+        return await _guarded(state, lambda g: g.close_agenda_window())
+
+    @post("/action/begin_vote")
+    async def begin_vote(request: Request, seat: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.begin_agenda_vote(g.players[seat], did, is_admin=admin))
+
+    @post("/action/cast_vote")
+    async def cast_vote(request: Request, seat: int) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(state, lambda g: g.cast_agenda_vote(g.players[seat], did, is_admin=admin))
+
+    @post("/action/toggle_agenda")
+    async def toggle_agenda() -> Response:
+        return await _guarded(state, lambda g: setattr(
+            g, "agenda_enabled_this_round", not g.agenda_enabled_this_round))
+
+    @post("/action/admin_login")
+    async def admin_login(request: Request) -> Response:
+        signals = await read_signals(request) or {}
+        resp = Response(content="", status_code=204)
+        if signals.get("password") == state.game.config.admin_password:
+            resp.set_cookie(ADMIN_COOKIE, "1")
+        return resp
+
+    @post("/action/admin_logout")
+    async def admin_logout() -> Response:
+        resp = Response(content="", status_code=204)
+        resp.delete_cookie(ADMIN_COOKIE)
+        return resp
+
     async def _startup(app: Litestar) -> None:
         await state.load()
 
     return Litestar(
         route_handlers=[index, events, claim_seat, release_seat, toggle_pause,
-                        advance, debug_players],
+                        advance, debug_players, score, pick_card, begin_pick,
+                        end_turn, pass_turn, open_secondary, close_secondary,
+                        open_agenda_window, close_agenda_window, begin_vote,
+                        cast_vote, toggle_agenda, admin_login, admin_logout],
         on_startup=[_startup],
     )
 
