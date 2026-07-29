@@ -1,53 +1,50 @@
-# Twilight Imperium dashboard — NiceGUI
+# Twilight Imperium 4 Dashboard
 
-A shared game tracker for a table of 3–8 players. Open it on the TV and on
-everyone's phone; any change on one device appears on all of them.
+A shared, real-time dashboard for an in-person game of Twilight Imperium 4
+(with the Prophecy of Kings and Thunder's Edge expansions). Runs on a home
+server; open it on a shared TV and on each player's phone — every change on
+one device appears on all of them via Datastar SSE.
+
+Tracks per-segment turn timers (recorded to SQLite), the full phase flow with
+admin-gated transitions, seating/speaker and initiative orderings, player
+faction/color, and victory points. Includes a global pause for meal breaks.
 
 ## Run
 
 ```bash
-pip install nicegui        # tested against 3.15
-python main.py
+uv run python -m ti_dash
 ```
 
-Then open `http://<your-lan-ip>:8080` on every device at the table.
+Then open `http://<your-lan-ip>:8000` on every device at the table.
 
-## Why it's built this way
+## How it works
 
-NiceGUI 3.0 **removed the shared "auto-index" client**. In 2.x, UI elements in
-global scope were served at `/` as a single client shared by every browser, which
-made a shared dashboard nearly free. That's gone — global-scope UI is now
-re-evaluated per visit ("script mode"), so each browser gets its own instance.
+Three layers:
 
-The replacement is the `Event` system, added in 3.0 for exactly this:
+- `ti_dash/domain/` — pure game rules (Game, Player, Clock, phase machine,
+  orderings, authorization). No web or database imports; fully unit-tested.
+- `ti_dash/persistence/` — SQLite (via aiosqlite): a durable game snapshot
+  plus an append-only `turn_records` table. The database and tables are
+  created automatically on first run. Game state survives a restart; the
+  live running timer is intentionally not restored.
+- `ti_dash/web/` — the Litestar app: htpy-rendered HTML, Datastar SSE
+  fan-out to every connected device, and per-action endpoints.
 
+## Seats and admin
+
+Each device claims a player seat (a per-browser cookie) and may act only for
+that seat. Admin mode is entered with a shared password
+(`TimerConfig.admin_password`, default `password`) and can edit anything for
+anyone.
+
+## Configuration
+
+Timer budgets and the admin password live in `TimerConfig`
+(`ti_dash/domain/config.py`). Thunder's Edge faction names are populated in
+`ti_dash/domain/reference.py` (a marked section to fill in).
+
+## Tests
+
+```bash
+uv run pytest
 ```
-game     long-living plain-Python object   (game.py — no nicegui import)
-changed  nicegui.Event
-@ui.page per-client UI that subscribes to `changed`
-```
-
-Every mutation calls `touch()`, which emits the event; each connected client's
-`@ui.refreshable` board rebuilds. Subscriptions made inside a UI context are
-unsubscribed automatically when that client disconnects, so players closing
-their phone browsers don't leak handlers.
-
-`game.py` importing nothing from NiceGUI is the load-bearing part — it's what
-lets the UI stay disposable while the game state persists.
-
-## One trap worth knowing
-
-The turn clock is derived from a server-side `time.monotonic()` timestamp
-(`Game.elapsed`), not incremented by a ticker. A per-client `ui.timer` only
-triggers a repaint. If you instead had each client's timer add a second to the
-counter, six connected phones would make the clock run six times too fast.
-
-## Not included
-
-Objectives (public stage I/II and secrets), technology trees, and the galaxy map.
-Objectives are the natural next addition: add a `list[Objective]` to `Game`, a
-`scored_by: set[str]`, and a grid of toggles — scoring already routes through
-`Game.score()`, so the track and standings update for free.
-
-State is in-memory and resets on restart. For a game spanning sessions, pickle
-`Game` on change, or swap the dataclasses for SQLModel rows.
