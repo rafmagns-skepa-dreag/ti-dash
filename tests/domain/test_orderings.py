@@ -35,6 +35,12 @@ def test_initiative_order_by_card_number():
     assert [p.name for p in g.initiative_order()] == ["Bo", "Cass", "Ana", "Dev"]
 
 
+def test_seating_order_falls_back_when_speaker_seat_absent():
+    g = make_game()
+    g.speaker = 99  # No such seat
+    assert [p.name for p in g.seating_order()] == ["Ana", "Bo", "Cass", "Dev"]
+
+
 def test_demo_builds_four_players_round_one_strategy():
     g = Game.demo()
     assert len(g.players) == 4

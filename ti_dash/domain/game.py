@@ -34,7 +34,7 @@ class Game:
         ordered = sorted(self.players, key=lambda p: p.seat)
         if not ordered:
             return ordered
-        start = next(i for i, p in enumerate(ordered) if p.seat == self.speaker)
+        start = next((i for i, p in enumerate(ordered) if p.seat == self.speaker), 0)
         return ordered[start:] + ordered[:start]
 
     def initiative_order(self) -> list[Player]:
