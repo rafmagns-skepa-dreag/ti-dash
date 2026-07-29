@@ -30,6 +30,7 @@ class Game:
 
     _sequence: int = 0
     _resume_clock: "Clock | None" = None
+    _turn_no: int = 0
 
     # -- orderings --------------------------------------------------------
     def seating_order(self) -> list[Player]:
@@ -88,6 +89,64 @@ class Game:
     def _check_not_paused(self) -> None:
         if self.paused:
             raise RuntimeError("game is paused")
+
+    def _seat_index(self, player) -> int:
+        return self.players.index(player)
+
+    def start_action_phase(self) -> None:
+        self.phase = "Action"
+        self.awaiting_admin = False
+        self._turn_no = 0
+        first = self.initiative_order()[0]
+        self.active = self._seat_index(first)
+        self.action_clock.reset(self.config.budget_for("action"))
+        self.action_clock.start()
+
+    def _current(self):
+        return self.players[self.active] if self.active is not None else None
+
+    def end_turn(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        self.action_clock.stop()
+        self._record("action", player=player, turn=self._turn_no,
+                     duration=self.action_clock.elapsed())
+        self._advance_action()
+
+    def pass_turn(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        player.passed = True
+        self.action_clock.stop()
+        self._record("action", player=player, turn=self._turn_no,
+                     duration=self.action_clock.elapsed())
+        self._advance_action()
+
+    def _advance_action(self) -> None:
+        self._turn_no += 1
+        order = self.initiative_order()
+        current = self._current()
+        # rotate order to start just after the current player
+        idx = order.index(current) if current in order else -1
+        rotated = order[idx + 1:] + order[: idx + 1]
+        nxt = next((p for p in rotated if not p.passed), None)
+        if nxt is None:
+            self.action_clock.stop()
+            self.active = None
+            self.awaiting_admin = True
+            return
+        self.active = self._seat_index(nxt)
+        self.action_clock.reset(self.config.budget_for("action"))
+        self.action_clock.start()
+
+    def open_secondary(self) -> None:
+        self.secondary_clock.reset(self.config.budget_for("secondary"))
+        self.secondary_clock.start()
+
+    def close_secondary(self) -> None:
+        self.secondary_clock.stop()
+        self._record("secondary", player=self._current(), turn=self._turn_no,
+                     duration=self.secondary_clock.elapsed())
 
     def score(self, player, delta, device_id=None, *, is_admin=False) -> None:
         self._check_not_paused()
