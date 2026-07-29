@@ -38,5 +38,6 @@ def test_full_page_loads_datastar_and_embeds_fragments():
     html = str(render.full_page(g, is_admin=False))
     assert html.startswith("<!doctype html>")
     assert "&lt;!doctype" not in html
+    assert html.lower().count("<!doctype") == 1
     assert "datastar" in html.lower()
     assert 'id="players"' in html and 'id="phasebar"' in html
