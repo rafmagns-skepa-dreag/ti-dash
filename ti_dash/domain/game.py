@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 
 from ti_dash.domain.clock import Clock
@@ -28,6 +29,7 @@ class Game:
     agenda_vote_clock: Clock = field(default_factory=Clock)
 
     _sequence: int = 0
+    _resume_clock: "Clock | None" = None
 
     # -- orderings --------------------------------------------------------
     def seating_order(self) -> list[Player]:
@@ -59,6 +61,48 @@ class Game:
     def authorize(self, player: Player, device_id: str | None, *, is_admin: bool) -> None:
         if not is_admin and player.claim_token != device_id:
             raise PermissionError(f"not authorized to act for {player.name}")
+
+    # -- pause/resume --------------------------------------------------------
+    def _all_clocks(self) -> list[Clock]:
+        return [
+            self.strategy_pick_clock, self.action_clock, self.secondary_clock,
+            self.status_clock, self.agenda_window_clock, self.agenda_vote_clock,
+        ]
+
+    def active_clock(self) -> "Clock | None":
+        return next((c for c in self._all_clocks() if c.running), None)
+
+    def pause(self) -> None:
+        running = self.active_clock()
+        self._resume_clock = running
+        if running is not None:
+            running.stop()
+        self.paused = True
+
+    def resume(self) -> None:
+        self.paused = False
+        if self._resume_clock is not None:
+            self._resume_clock.start()
+            self._resume_clock = None
+
+    def _check_not_paused(self) -> None:
+        if self.paused:
+            raise RuntimeError("game is paused")
+
+    def _record(self, context: str, *, player, turn: int | None, duration: float) -> None:
+        self._sequence += 1
+        self.pending_records.append(TurnRecord(
+            sequence=self._sequence,
+            round=self.round,
+            turn=turn,
+            phase=self.phase,
+            context=context,
+            player_name=player.name if player is not None else None,
+            seat=player.seat if player is not None else None,
+            duration_seconds=duration,
+            over_budget=duration > self.config.budget_for(context),
+            ended_at=time.time(),
+        ))
 
     # -- construction -----------------------------------------------------
     @classmethod

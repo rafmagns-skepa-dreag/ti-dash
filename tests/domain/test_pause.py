@@ -1,0 +1,48 @@
+import time
+import pytest
+from ti_dash.domain.game import Game
+
+
+def test_pause_stops_running_clock_and_banks(monkeypatch):
+    t = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: t[0])
+    g = Game()
+    g.action_clock.start()
+    t[0] = 30.0
+    g.pause()
+    assert g.paused is True
+    assert g.action_clock.running is False
+    assert g.action_clock.elapsed() == 30.0
+    t[0] = 100.0  # paused time must not count
+    assert g.action_clock.elapsed() == 30.0
+
+
+def test_resume_restarts_the_paused_clock(monkeypatch):
+    t = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: t[0])
+    g = Game()
+    g.action_clock.start()
+    t[0] = 30.0
+    g.pause()
+    t[0] = 100.0
+    g.resume()
+    assert g.paused is False
+    assert g.action_clock.running is True
+    t[0] = 110.0
+    assert g.action_clock.elapsed() == 40.0
+
+
+def test_check_not_paused_raises():
+    g = Game()
+    g.paused = True
+    with pytest.raises(RuntimeError):
+        g._check_not_paused()
+
+
+def test_record_appends_and_flags_over_budget():
+    g = Game()
+    g.config.action_seconds = 60.0
+    g._record("action", player=None, turn=1, duration=75.0)
+    r = g.pending_records[0]
+    assert r.sequence == 1 and r.context == "action"
+    assert r.over_budget is True and r.duration_seconds == 75.0
