@@ -89,6 +89,28 @@ class Game:
         if self.paused:
             raise RuntimeError("game is paused")
 
+    def score(self, player, delta, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        player.vp = max(0, min(self.vp_goal, player.vp + delta))
+
+    def begin_strategy_pick(self, player) -> None:
+        self.strategy_pick_clock.reset(self.config.budget_for("strategy_pick"))
+        self.strategy_pick_clock.start()
+
+    def pick_strategy_card(self, player, card, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        for other in self.players:
+            if other is not player and other.strategy_card == card:
+                other.strategy_card = None
+        player.strategy_card = card
+        self.strategy_pick_clock.stop()
+        self._record(
+            "strategy_pick", player=player, turn=None,
+            duration=self.strategy_pick_clock.elapsed(),
+        )
+
     def _record(self, context: str, *, player, turn: int | None, duration: float) -> None:
         self._sequence += 1
         self.pending_records.append(TurnRecord(
