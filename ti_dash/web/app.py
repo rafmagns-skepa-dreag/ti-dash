@@ -1,29 +1,37 @@
 import asyncio
 from collections.abc import Callable
 
-from datastar_py.litestar import (
-    DatastarResponse,
-    read_signals,
-)
-from datastar_py.litestar import (
-    ServerSentEventGenerator as SSE,
-)
+from datastar_py.litestar import DatastarResponse, read_signals
+from datastar_py.litestar import ServerSentEventGenerator as SSE
 from litestar import Litestar, Request, get, post
 from litestar.exceptions import HTTPException
 from litestar.response import Response
 
 from ti_dash.domain.game import Game
+from ti_dash.domain.models import Player
+from ti_dash.domain.reference import Color, Faction
 from ti_dash.persistence.db import Database
 from ti_dash.web import render
 from ti_dash.web.broadcast import Broadcaster
 from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
 from ti_dash.web.styles import CSS
 
+PLAYERS = [
+    Player("Imogen", Faction.NAALU, Color.GREEN, 0),
+    Player("Pavle", Faction.RAL_NEL, Color.BLACK, 1),
+    Player("Gil", Faction.CRIMSON, Color.RED, 2),
+    Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
+    Player("Izzy", Faction.KELERES, Color.PINK, 4),
+    Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
+    Player("Dani!", Faction.BASTION, Color.YELLOW, 6),
+    Player("Summer", Faction.MUAAT, Color.ORANGE, 7),
+]
+
 
 class AppState:
     def __init__(self, db: Database) -> None:
         self.db = db
-        self.game = Game.demo()
+        self.game = Game(players=PLAYERS)
         self.broadcaster = Broadcaster()
         self.lock = asyncio.Lock()
 
@@ -148,7 +156,7 @@ def create_app(db_path: str) -> Litestar:
 
     @post("/action/begin_pick")
     async def begin_pick(request: Request, seat: int) -> Response:
-        return await _guarded(state, lambda g: g.begin_strategy_pick(g.players[seat]))
+        return await _guarded(state, lambda g: g.begin_strategy_pick())
 
     @post("/action/end_turn")
     async def end_turn(request: Request, seat: int) -> Response:

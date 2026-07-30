@@ -1,7 +1,7 @@
 import asyncio
-import pytest
-from ti_dash.web.identity import new_device_id, DEVICE_COOKIE, ADMIN_COOKIE
+
 from ti_dash.web.broadcast import Broadcaster
+from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
 
 
 def test_device_ids_are_unique_hex():

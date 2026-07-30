@@ -1,5 +1,5 @@
 from ti_dash.domain.game import Game
-from ti_dash.persistence.serialize import game_to_dict, game_from_dict
+from ti_dash.persistence.serialize import game_from_dict, game_to_dict
 
 
 def build():
@@ -10,7 +10,7 @@ def build():
     g.claim_seat(a, "d0")
     b = g.add_player("Bo", "The Winnu", "Blue")
     b.passed = True
-    g.speaker = 1
+    g.speaker_seat_number = 1
     g.round = 5
     g.phase = "Action"
     g.active = 0
@@ -29,7 +29,12 @@ def test_roundtrip_preserves_durable_state():
         ("Ana", 4, 3, False, 0, "d0"),
         ("Bo", 0, None, True, 1, None),
     ]
-    assert (g2.speaker, g2.round, g2.phase, g2.active) == (1, 5, "Action", 0)
+    assert (g2.speaker_seat_number, g2.round, g2.phase, g2.active) == (
+        1,
+        5,
+        "Action",
+        0,
+    )
     assert g2._sequence == 7
 
 

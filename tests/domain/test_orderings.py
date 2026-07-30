@@ -1,5 +1,5 @@
-from ti_dash.domain.models import Player
 from ti_dash.domain.game import Game
+from ti_dash.domain.models import Player
 
 
 def make_game():

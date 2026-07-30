@@ -15,7 +15,7 @@ _PLAYER_KEYS = (
     "claim_token",
 )
 _GAME_KEYS = (
-    "speaker",
+    "speaker_seat_number",
     "round",
     "vp_goal",
     "phase",
@@ -36,8 +36,7 @@ def game_to_dict(game: Game) -> dict:
 
 
 def game_from_dict(data: dict) -> Game:
-    g = Game()
-    g.players = [Player(**pd) for pd in data["players"]]
+    g = Game(players=[Player(**pd) for pd in data["players"]])
     for k in _GAME_KEYS:
         setattr(g, k, data[k])
     valid = {f.name for f in fields(TimerConfig)}

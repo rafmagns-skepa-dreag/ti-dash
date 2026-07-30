@@ -1,13 +1,6 @@
 from dataclasses import dataclass
 
-_BUDGET_FIELDS = {
-    "strategy_pick": "strategy_pick_seconds",
-    "action": "action_seconds",
-    "secondary": "secondary_seconds",
-    "status": "status_seconds",
-    "agenda_window": "agenda_window_seconds",
-    "agenda_vote": "agenda_vote_seconds",
-}
+from ti_dash.domain.reference import BUDGET_FIELDS, Context
 
 
 @dataclass
@@ -21,5 +14,5 @@ class TimerConfig:
     vp_goal: int = 10
     admin_password: str = "password"
 
-    def budget_for(self, context: str) -> float:
-        return getattr(self, _BUDGET_FIELDS[context])
+    def budget_for(self, context: Context) -> float:
+        return getattr(self, BUDGET_FIELDS[context])

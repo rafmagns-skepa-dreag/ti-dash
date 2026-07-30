@@ -4,7 +4,7 @@ import time
 import aiosqlite
 
 from ti_dash.domain.game import Game
-from ti_dash.domain.records import TurnRecord
+from ti_dash.domain.models import TurnRecord
 from ti_dash.persistence.serialize import game_from_dict, game_to_dict
 
 _SCHEMA = """

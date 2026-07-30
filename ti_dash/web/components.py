@@ -2,7 +2,6 @@ import htpy
 from datastar_py.attributes import attribute_generator as d
 
 from ti_dash.domain.game import Game
-from ti_dash.domain.reference import STRATEGY_CARDS
 
 
 def _on_click(expression: str) -> dict:
@@ -27,9 +26,7 @@ def player_card(game: Game, p) -> htpy.Element:
         htpy.span(class_="name")[p.name],
         htpy.span(class_="faction")[p.faction],
         htpy.span(class_="vp")[f"VP {p.vp}"],
-        htpy.span(class_="card")[
-            STRATEGY_CARDS[p.strategy_card] if p.strategy_card else "—"
-        ],
+        htpy.span(class_="card")[p.strategy_card.name if p.strategy_card else "—"],
         htpy.span(class_="passed")["passed" if p.passed else ""],
         htpy.button(
             _on_click(f"@post('/action/{action}?seat={p.seat}')"),

@@ -1,19 +1,13 @@
 from ti_dash.domain.config import TimerConfig
-from ti_dash.domain.records import TurnRecord
+from ti_dash.domain.models import TurnRecord
+from ti_dash.domain.reference import Context, Phase
 
 
 def test_config_defaults_and_budget_lookup():
     c = TimerConfig()
     assert c.vp_goal == 10
-    assert c.budget_for("action") == c.action_seconds
-    assert c.budget_for("agenda_vote") == c.agenda_vote_seconds
-
-
-def test_budget_for_unknown_context_raises():
-    import pytest
-
-    with pytest.raises(KeyError):
-        TimerConfig().budget_for("nope")
+    assert c.budget_for(Context.ACTION) == c.action_seconds
+    assert c.budget_for(Context.AGENDA_VOTE) == c.agenda_vote_seconds
 
 
 def test_turn_record_fields():
@@ -21,8 +15,8 @@ def test_turn_record_fields():
         sequence=1,
         round=2,
         turn=3,
-        phase="Action",
-        context="action",
+        phase=Phase.Action,
+        context=Context.ACTION,
         player_name="Ana",
         seat=0,
         duration_seconds=42.5,

@@ -1,4 +1,5 @@
 import time
+
 from ti_dash.domain.clock import Clock
 
 

@@ -1,5 +1,7 @@
 import time
+
 import pytest
+
 from ti_dash.domain.game import Game
 
 
