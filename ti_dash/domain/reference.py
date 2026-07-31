@@ -23,7 +23,7 @@ class StrategyCard(Enum):
     Imperial = 8
 
 
-class Phase(Enum):
+class Phase(StrEnum):
     Strategy = auto()
     Action = auto()
     Status = auto()

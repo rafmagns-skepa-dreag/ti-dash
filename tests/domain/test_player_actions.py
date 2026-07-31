@@ -3,6 +3,7 @@ import time
 import pytest
 
 from ti_dash.domain.game import Game
+from ti_dash.domain.reference import Context, StrategyCard
 
 
 def test_score_clamps_between_zero_and_goal():
@@ -42,14 +43,14 @@ def test_pick_records_strategy_pick_and_steals(monkeypatch):
     g.claim_seat(a, "d1")
     b = g.add_player("Bo", "F", "Blue")
     g.claim_seat(b, "d2")
-    g.begin_strategy_pick(a)
+    g.begin_strategy_pick()
     t[0] = 25.0
-    g.pick_strategy_card(a, 5, "d1")
-    assert a.strategy_card == 5
+    g.pick_strategy_card(a, StrategyCard.Trade, "d1")
+    assert a.strategy_card == StrategyCard.Trade
     rec = g.pending_records[-1]
-    assert rec.context == "strategy_pick" and rec.player_name == "Ana"
+    assert rec.context == Context.STRATEGY_PICK and rec.player_name == "Ana"
     assert rec.duration_seconds == 25.0 and rec.turn is None
     # stealing
-    g.begin_strategy_pick(b)
-    g.pick_strategy_card(b, 5, "d2")
-    assert b.strategy_card == 5 and a.strategy_card is None
+    g.begin_strategy_pick()
+    g.pick_strategy_card(b, StrategyCard.Trade, "d2")
+    assert b.strategy_card == StrategyCard.Trade and a.strategy_card is None

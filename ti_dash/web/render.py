@@ -31,9 +31,7 @@ def timer_fragment(game: Game) -> str:
                 paused=game.paused,
             )
         ),
-        dict(
-            d.text("$running ? Math.round(($endsAt - $now)/1000) + 's' : '--'")
-        ),
+        dict(d.text("$running ? Math.round(($endsAt - $now)/1000) + 's' : '--'")),
         id="active-timer",
     )[""]
     return str(node)
@@ -44,7 +42,11 @@ def players_fragment(game: Game) -> str:
 
 
 def phasebar_fragment(game: Game) -> str:
-    active = game.players[game.active].name if game.active is not None else "—"
+    active = (
+        game.current_phase_ordering[game.active].name
+        if game.active is not None
+        else "—"
+    )
     gate = (
         htpy.button(_on_click("@post('/action/advance')"), class_="gate")[
             "Start next phase"
@@ -56,7 +58,7 @@ def phasebar_fragment(game: Game) -> str:
     return str(
         htpy.div(id="phasebar")[
             htpy.span[f"Round {game.round}"],
-            htpy.span[f"Phase: {game.phase}"],
+            htpy.span[f"Phase: {game.phase.name}"],
             htpy.span[f"Active: {active}"],
             htpy.span[f"Paused: {game.paused}"],
             htpy.button(_on_click("@post('/action/toggle_pause')"), class_="pause")[

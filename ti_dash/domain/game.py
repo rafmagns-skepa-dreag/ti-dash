@@ -36,8 +36,8 @@ class Game:
     @property
     def speaker_order(self) -> list[Player]:
         return (
-            self.players[: self.speaker_seat_number]
-            + self.players[self.speaker_seat_number :]
+            self.players[self.speaker_seat_number :]
+            + self.players[: self.speaker_seat_number]
         )
 
     @property
@@ -122,7 +122,11 @@ class Game:
         self.action_clock.start()
 
     def _current(self) -> Player | None:
-        return self.players[self.active] if self.active is not None else None
+        return (
+            self.current_phase_ordering[self.active]
+            if self.active is not None
+            else None
+        )
 
     def end_turn(self, player, device_id=None, *, is_admin=False) -> None:
         self._check_not_paused()
@@ -151,14 +155,15 @@ class Game:
 
     def _advance_action(self) -> None:
         self._turn_no += 1
-        next_player = self.active or -1 + 1
-        order = self.current_phase_ordering
+        assert self.active is not None
+        start = self.active + 1
 
-        rotated = order[next_player:] + order[next_player:]
+        current_order = self.current_phase_ordering
         nxt = None
-        for i, player in enumerate(rotated):
-            if not player.passed:
-                nxt = i
+        for i in range(len(self.players)):
+            possible = (start + i) % len(self.players)
+            if not current_order[possible].passed:
+                nxt = possible
                 break
 
         if nxt is None:
@@ -166,6 +171,7 @@ class Game:
             self.active = None
             self.awaiting_admin = True
             return
+        print(nxt)
         self.active = nxt
         self.action_clock.reset(self.config.budget_for(Context.ACTION))
         self.action_clock.start()

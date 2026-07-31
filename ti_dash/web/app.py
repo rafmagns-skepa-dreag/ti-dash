@@ -9,7 +9,7 @@ from litestar.response import Response
 
 from ti_dash.domain.game import Game
 from ti_dash.domain.models import Player
-from ti_dash.domain.reference import Color, Faction
+from ti_dash.domain.reference import Color, Faction, Phase
 from ti_dash.persistence.db import Database
 from ti_dash.web import render
 from ti_dash.web.broadcast import Broadcaster
@@ -258,11 +258,12 @@ def create_app(db_path: str) -> Litestar:
 
 
 def _advance_transition(g: Game) -> None:
-    if g.phase == "Strategy":
-        g.start_action_phase()
-    elif g.phase == "Action":
-        g.start_status_phase()
-    elif g.phase == "Status":
-        g.start_agenda_phase() if g.agenda_enabled_this_round else g.new_round()
-    elif g.phase == "Agenda":
-        g.new_round()
+    match g.phase:
+        case Phase.Strategy:
+            g.start_action_phase()
+        case Phase.Action:
+            g.start_status_phase()
+        case Phase.Status:
+            g.start_agenda_phase() if g.agenda_enabled_this_round else g.new_round()
+        case Phase.Agenda:
+            g.new_round()

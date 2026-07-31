@@ -1,3 +1,4 @@
+from ti_dash.domain.reference import Context
 import time
 
 import pytest
@@ -44,9 +45,9 @@ def test_check_not_paused_raises():
 def test_record_appends_and_flags_over_budget():
     g = Game()
     g.config.action_seconds = 60.0
-    g._record("action", player=None, turn=1, duration=75.0)
+    g._record(Context.ACTION, player=None, turn=1, duration=75.0)
     r = g.pending_records[0]
-    assert r.sequence == 1 and r.context == "action"
+    assert r.sequence == 1 and r.context == Context.ACTION
     assert r.over_budget is True and r.duration_seconds == 75.0
 
 
