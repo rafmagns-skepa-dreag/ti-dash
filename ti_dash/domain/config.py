@@ -12,7 +12,6 @@ class TimerConfig:
     agenda_window_seconds: float = 60.0
     agenda_vote_seconds: float = 90.0
     vp_goal: int = 10
-    admin_password: str = "password"
 
     def budget_for(self, context: Context) -> float:
         return getattr(self, BUDGET_FIELDS[context])

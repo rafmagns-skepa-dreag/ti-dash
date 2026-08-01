@@ -57,7 +57,5 @@ def test_roundtrip_discards_live_clocks():
 def test_config_survives_roundtrip():
     g = build()
     g.config.action_seconds = 240.0
-    g.config.admin_password = "secret"
     g2 = game_from_dict(game_to_dict(g))
     assert g2.config.action_seconds == 240.0
-    assert g2.config.admin_password == "secret"

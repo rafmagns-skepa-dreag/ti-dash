@@ -59,29 +59,31 @@ class Game:
     def from_dict(data: dict) -> Game:
         data["players"] = [Player.from_dict(**pd) for pd in data["players"]]
         data["phase"] = Phase[data["phase"]]
+        data["config"].pop("admin_password", None)
         data["config"] = TimerConfig(**data["config"])
         if "sequence" in data:
             data["_sequence"] = data.pop("sequence")
+        if "admin_password" in data:
+            del data["admin_password"]
         return Game(**data)
 
-    @property
-    def speaker_order(self) -> list[Player]:
+    def speaker_order(self, offset: int = 0) -> list[Player]:
         return (
-            self.players[self.speaker_seat_number :]
-            + self.players[: self.speaker_seat_number]
+            self.players[self.speaker_seat_number + offset :]
+            + self.players[: self.speaker_seat_number + offset]
         )
 
     @property
     def current_phase_ordering(self) -> list[Player]:
         match self.phase:
             case Phase.Strategy:
-                return self.speaker_order
+                return self.speaker_order(offset=0)
             case Phase.Action:
                 return self.initiative_order()
             case Phase.Agenda:
-                return self.speaker_order
+                return self.speaker_order(offset=1)
             case Phase.Status:
-                return self.speaker_order
+                return self.initiative_order()
             case _ as e:
                 raise RuntimeError(f"Unknown phase {e}")
 
@@ -262,7 +264,9 @@ class Game:
         player.strategy_card = None
         self.awaiting_admin = False
 
-    def set_passed(self, player: Player, passed: bool, *, is_admin: bool = False) -> None:
+    def set_passed(
+        self, player: Player, passed: bool, *, is_admin: bool = False
+    ) -> None:
         if not is_admin:
             raise PermissionError("only admin can change pass status")
         player.passed = passed
@@ -341,7 +345,8 @@ class Game:
     def open_agenda_window(self) -> None:
         if self.agenda_vote_clock.running:
             self.agenda_vote_clock.stop()
-        self.active = self._after_speaker()
+        self.active = 0
+        # self.active = self._after_speaker()
         self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
         self.agenda_window_clock.start()
 
@@ -357,7 +362,8 @@ class Game:
     def begin_agenda_vote(self) -> None:
         if self.agenda_window_clock.running:
             self.close_agenda_window()
-        self.active = self._after_speaker()
+        # self.active = self._after_speaker()
+        self.active = 0
         self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
         self.agenda_vote_clock.start()
 

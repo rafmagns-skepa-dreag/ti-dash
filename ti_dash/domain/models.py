@@ -16,6 +16,8 @@ class Player:
 
     @property
     def initiative(self) -> int:
+        if self.faction is Faction.NAALU:
+            return 0
         return self.strategy_card.value if self.strategy_card is not None else 99
 
     def to_dict(self):

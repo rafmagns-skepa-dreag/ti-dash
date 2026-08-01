@@ -49,23 +49,21 @@ h1 {
   padding: 0 1rem;
 }
 
-.admin-badge {
-  background: var(--warn);
-  color: #fff;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-}
-
-.admin-password {
+.admin-toggle {
   font: inherit;
   background: var(--panel-2);
   border: 1px solid var(--line);
   color: var(--text);
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.admin-toggle.is-on {
+  background: var(--warn);
+  color: #fff;
+  border-color: var(--warn);
 }
 
 /* --- admin-only player controls ----------------------------------------- */
@@ -198,6 +196,18 @@ h1 {
   margin-right: 0.5rem;
   vertical-align: middle;
   border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.player-card .speaker-badge:not(:empty) {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  margin-left: 0.5rem;
 }
 
 .player-card .faction {

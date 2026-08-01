@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Callable
 
-from datastar_py.litestar import DatastarResponse, read_signals
+from datastar_py.litestar import DatastarResponse
 from datastar_py.litestar import ServerSentEventGenerator as SSE
 from litestar import Litestar, Request, get, post
 from litestar.exceptions import HTTPException
@@ -20,7 +20,7 @@ from ti_dash.web.styles import CSS
 PLAYERS = lambda: [
     Player("Imogen", Faction.NAALU, Color.GREEN, 0),
     Player("Pavle", Faction.RAL_NEL, Color.BLACK, 1),
-    # Player("Gil", Faction.CRIMSON, Color.RED, 2),
+    Player("Gil", Faction.CRIMSON, Color.RED, 2),
     # Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
     # Player("Izzy", Faction.KELERES, Color.PINK, 4),
     # Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
@@ -261,16 +261,14 @@ def create_app(db_path: str) -> Litestar:
         return await _guarded(state, lambda g: g.end_agenda_phase())
 
     @post("/action/admin_login")
-    async def admin_login(request: Request) -> Response:
-        signals = await read_signals(request) or {}
-        resp = Response(content="", status_code=204)
-        if signals.get("password") == state.game.config.admin_password:
-            resp.set_cookie(ADMIN_COOKIE, "1")
+    async def admin_login() -> Response:
+        resp = DatastarResponse(SSE.patch_signals({"isAdmin": True}))
+        resp.set_cookie(ADMIN_COOKIE, "1")
         return resp
 
     @post("/action/admin_logout")
     async def admin_logout() -> Response:
-        resp = Response(content="", status_code=204)
+        resp = DatastarResponse(SSE.patch_signals({"isAdmin": False}))
         resp.delete_cookie(ADMIN_COOKIE)
         return resp
 

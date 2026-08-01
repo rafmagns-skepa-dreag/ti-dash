@@ -134,6 +134,9 @@ def player_card(game: Game, p) -> htpy.Element:
     )[
         htpy.span(class_="swatch", style=f"background:{p.color}")[""],
         htpy.span(class_="name")[p.name],
+        htpy.span(class_="speaker-badge")[
+            "SPEAKER" if p.seat == game.speaker_seat_number else ""
+        ],
         htpy.span(class_="faction")[p.faction],
         htpy.span(class_="vp")[f"VP {p.vp}"],
         htpy.span(class_="card")[p.strategy_card.name if p.strategy_card else "—"],
