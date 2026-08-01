@@ -17,5 +17,5 @@ class TimerConfig:
     def budget_for(self, context: Context, player_type: PlayerType) -> float:
         t = getattr(self, BUDGET_FIELDS[context])
         if player_type is not PlayerType.DEFAULT and "action" in str(context).lower():
-            t += 60
+            t += 120
         return t
