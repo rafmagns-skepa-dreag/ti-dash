@@ -9,7 +9,7 @@ from litestar.params import FromQuery
 from litestar.response import Response
 
 from ti_dash.domain.game import Game
-from ti_dash.domain.models import Player
+from ti_dash.domain.models import Player, PlayerType
 from ti_dash.domain.reference import Color, Faction, Phase, StrategyCard
 from ti_dash.persistence.db import Database
 from ti_dash.web import render
@@ -18,14 +18,20 @@ from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
 from ti_dash.web.styles import CSS
 
 PLAYERS = lambda: [
-    Player("Imogen", Faction.NAALU, Color.GREEN, 0),
+    Player(
+        "Imogen", Faction.NAALU, Color.GREEN, 0, player_type=PlayerType.INEXPERIENCED
+    ),
     Player("Pavle", Faction.RAL_NEL, Color.BLACK, 1),
     Player("Gil", Faction.CRIMSON, Color.RED, 2),
-    # Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
-    # Player("Izzy", Faction.KELERES, Color.PINK, 4),
-    # Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
-    # Player("Dani!", Faction.BASTION, Color.YELLOW, 6),
-    # Player("Summer", Faction.MUAAT, Color.ORANGE, 7),
+    Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
+    Player(
+        "Izzy", Faction.KELERES, Color.PINK, 4, player_type=PlayerType.INEXPERIENCED
+    ),
+    Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
+    Player(
+        "Dani!", Faction.BASTION, Color.YELLOW, 6, player_type=PlayerType.INEXPERIENCED
+    ),
+    Player("Summer", Faction.MUAAT, Color.ORANGE, 7),
 ]
 
 

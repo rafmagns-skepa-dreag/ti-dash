@@ -29,22 +29,40 @@ def _on_submit(expression: str) -> dict:
     return dict(d.on("submit", expression).prevent)
 
 
+def _score_controls(game: Game, p) -> htpy.Element | str:
+    if game.paused:
+        return ""
+    return htpy.div(class_="score-controls")[
+        htpy.button(
+            _on_click(f"@post('/action/score?seat={p.seat}&delta=-1')"),
+            class_="score-down",
+        )["−"],
+        htpy.button(
+            _on_click(f"@post('/action/score?seat={p.seat}&delta=1')"),
+            class_="score-up",
+        )["+"],
+    ]
+
+
 def _card_picker(game: Game, p) -> htpy.Element | str:
     if game.phase != Phase.Strategy or game.paused:
         return ""
     taken = {pl.strategy_card for pl in game.players if pl.strategy_card is not None}
     if p.strategy_card is None:
         available = [c for c in StrategyCard if c not in taken]
-        return htpy.div(class_="card-picker")[
-            [
-                htpy.button(
-                    _on_click(
-                        f"@post('/action/pick_card?seat={p.seat}&card={c.value}')"
-                    ),
-                    class_="pick-card",
-                )[c.name]
-                for c in available
-            ]
+        buttons = [
+            htpy.button(
+                _on_click(f"@post('/action/pick_card?seat={p.seat}&card={c.value}')"),
+                class_="pick-card",
+            )[c.name]
+            for c in available
+        ]
+        # Only the active player may pick right now; admin can pick for
+        # anyone out of turn.
+        if _is_active(game, p):
+            return htpy.div(class_="card-picker")[buttons]
+        return htpy.div(dict(d.show("$isAdmin")), class_="card-picker admin-only")[
+            buttons
         ]
     # Player already holds a card: only admin may reassign or clear it.
     reassignable = [c for c in StrategyCard if c not in taken or c is p.strategy_card]
@@ -195,6 +213,7 @@ def player_card(game: Game, p) -> htpy.Element:
         _initiative_badge(game, p),
         htpy.div(class_="vp-line")[
             htpy.span(class_="vp")[f"VP {p.vp}"],
+            _score_controls(game, p),
             # htpy.span(class_="passed")["passed" if p.passed else ""],
         ],
         htpy.button(

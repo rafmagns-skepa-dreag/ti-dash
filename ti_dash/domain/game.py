@@ -4,7 +4,7 @@ from typing import Final
 
 from ti_dash.domain.clock import Clock
 from ti_dash.domain.config import TimerConfig
-from ti_dash.domain.models import Player, TurnRecord
+from ti_dash.domain.models import Player, PlayerType, TurnRecord
 from ti_dash.domain.reference import Color, Context, Faction, Phase, StrategyCard
 
 
@@ -167,7 +167,11 @@ class Game:
         self.awaiting_admin = False
         self._turn_no = 0
         self.active = 0
-        self.action_clock.reset(self.config.budget_for(Context.ACTION))
+        self.action_clock.reset(
+            self.config.budget_for(
+                Context.ACTION, self.current_phase_ordering[self.active].player_type
+            )
+        )
         self.action_clock.start()
         self.unpass_players()
 
@@ -213,11 +217,19 @@ class Game:
             self.awaiting_admin = True
             return
         self.active = nxt
-        self.action_clock.reset(self.config.budget_for(Context.ACTION))
+        self.action_clock.reset(
+            self.config.budget_for(
+                Context.ACTION, self.current_phase_ordering[self.active].player_type
+            )
+        )
         self.action_clock.start()
 
     def open_secondary(self) -> None:
-        self.secondary_clock.reset(self.config.budget_for(Context.SECONDARY))
+        self.secondary_clock.reset(
+            self.config.budget_for(
+                Context.SECONDARY, self.current_phase_ordering[self.active].player_type
+            )
+        )
         self.secondary_clock.start()
 
     def close_secondary(self) -> None:
@@ -236,14 +248,20 @@ class Game:
 
     def begin_strategy_pick(self) -> None:
         self.strategy_pick_started = True
-        self.strategy_pick_clock.reset(self.config.budget_for(Context.STRATEGY_PICK))
-        self.strategy_pick_clock.start()
+        self._advance_strategy_pick()
 
     def pick_strategy_card(
         self, player, card: StrategyCard, device_id=None, *, is_admin=False
     ) -> None:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
+        if not is_admin and (
+            self.active is None
+            or self.current_phase_ordering[self.active].seat != player.seat
+        ):
+            raise PermissionError(
+                f"it is not {player.name}'s turn to pick a strategy card"
+            )
         for other in self.players:
             if other is not player and other.strategy_card is card:
                 other.strategy_card = None
@@ -255,14 +273,31 @@ class Game:
             turn=None,
             duration=self.strategy_pick_clock.elapsed(),
         )
-        if all(p.strategy_card is not None for p in self.players):
+        self._advance_strategy_pick()
+
+    def _advance_strategy_pick(self) -> None:
+        # Recompute from the top of speaker order each time rather than
+        # incrementing, so an admin picking out of turn order doesn't
+        # desync whose turn comes next.
+        self.active = self._find_next(0, skip=lambda p: p.strategy_card is not None)
+        if self.active is None:
+            self.strategy_pick_clock.stop()
             self.awaiting_admin = True
+            return
+        self.strategy_pick_clock.reset(
+            self.config.budget_for(
+                Context.STRATEGY_PICK,
+                self.current_phase_ordering[self.active].player_type,
+            )
+        )
+        self.strategy_pick_clock.start()
 
     def unset_strategy_card(self, player: Player, *, is_admin: bool = False) -> None:
         if not is_admin:
             raise PermissionError("only admin can unset a strategy card")
         player.strategy_card = None
         self.awaiting_admin = False
+        self._advance_strategy_pick()
 
     def set_passed(
         self, player: Player, passed: bool, *, is_admin: bool = False
@@ -277,13 +312,24 @@ class Game:
         if self.phase == Phase.Action:
             self.awaiting_admin = False
             self.active = self.current_phase_ordering.index(player)
-            self.action_clock.reset(self.config.budget_for(Context.ACTION))
+            self.action_clock.reset(
+                self.config.budget_for(
+                    Context.ACTION, self.current_phase_ordering[self.active].player_type
+                )
+            )
             self.action_clock.start()
         elif self.phase == Phase.Status:
             self.awaiting_admin = False
-            self.status_clock.reset(self.config.budget_for(Context.STATUS))
+            self.status_clock.reset(
+                self.config.budget_for(
+                    Context.STATUS, self.current_phase_ordering[self.active].player_type
+                )
+            )
             self.status_clock.start()
-        if self.active and self.current_phase_ordering[self.active] is player:
+        if (
+            self.active is not None
+            and self.current_phase_ordering[self.active] is player
+        ):
             self.active = self._find_next_unpassed_player()
 
     def _record(
@@ -300,7 +346,11 @@ class Game:
                 player_name=player.name if player is not None else None,
                 seat=player.seat if player is not None else None,
                 duration_seconds=duration,
-                over_budget=duration > self.config.budget_for(context),
+                over_budget=duration
+                > self.config.budget_for(
+                    context,
+                    player.player_type if player is not None else PlayerType.DEFAULT,
+                ),
                 ended_at=time.time(),
             )
         )
@@ -308,16 +358,20 @@ class Game:
     def start_strategy_phase(self) -> None:
         self.phase = Phase.Strategy
         self.awaiting_admin = False
-        self.active = None
+        self.active = 0
         self.strategy_pick_started = False
         self.unpass_players()
 
     def start_status_phase(self) -> None:
         self.phase = Phase.Status
         self.awaiting_admin = False
-        self.active = None
+        self.active = 0
         self.unpass_players()
-        self.status_clock.reset(self.config.budget_for(Context.STATUS))
+        self.status_clock.reset(
+            self.config.budget_for(
+                Context.STATUS, self.current_phase_ordering[self.active].player_type
+            )
+        )
         self.status_clock.start()
 
     def end_status_phase(self) -> None:
@@ -331,6 +385,11 @@ class Game:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
         player.passed = True
+        if (
+            self.active is not None
+            and player is self.current_phase_ordering[self.active]
+        ):
+            self.active = self._find_next_unpassed_player()
         if all(p.passed for p in self.players):
             self.end_status_phase()
 
@@ -347,7 +406,12 @@ class Game:
         # begin_agenda_vote().
         self.unpass_players()
         self.active = 0
-        self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
+        self.agenda_window_clock.reset(
+            self.config.budget_for(
+                Context.AGENDA_WINDOW,
+                self.current_phase_ordering[self.active].player_type,
+            )
+        )
         self.agenda_window_clock.start()
 
     def close_agenda_window(self) -> None:
@@ -375,7 +439,12 @@ class Game:
         if self.active is None:
             self.agenda_window_clock.stop()
             return
-        self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
+        self.agenda_window_clock.reset(
+            self.config.budget_for(
+                Context.AGENDA_WINDOW,
+                self.current_phase_ordering[self.active].player_type,
+            )
+        )
         self.agenda_window_clock.start()
 
     def begin_agenda_vote(self) -> None:
@@ -383,7 +452,12 @@ class Game:
         if self.agenda_window_clock.running:
             self.close_agenda_window()
         self.active = 0
-        self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
+        self.agenda_vote_clock.reset(
+            self.config.budget_for(
+                Context.AGENDA_VOTE,
+                self.current_phase_ordering[self.active].player_type,
+            )
+        )
         self.agenda_vote_clock.start()
 
     def cast_agenda_vote(self, player, device_id=None, *, is_admin=False) -> None:
@@ -401,25 +475,30 @@ class Game:
         player.passed = True
         self._advance_vote()
 
+    def _find_next(self, start: int, *, skip) -> int | None:
+        order = self.current_phase_ordering
+        n = len(order)
+        for i in range(n):
+            possible = (start + i) % n
+            if not skip(order[possible]):
+                return possible
+        return None
+
     def _find_next_unpassed_player(self) -> int | None:
         assert self.active is not None
-        start = self.active + 1
-
-        current_order = self.current_phase_ordering
-        nxt = None
-        for i in range(len(self.players)):
-            possible = (start + i) % len(self.players)
-            if not current_order[possible].passed:
-                nxt = possible
-                break
-        return nxt
+        return self._find_next(self.active + 1, skip=lambda p: p.passed)
 
     def _advance_vote(self) -> None:
         assert self.active is not None
         self.active = self._find_next_unpassed_player()
         if self.active is None:
             return
-        self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
+        self.agenda_vote_clock.reset(
+            self.config.budget_for(
+                Context.AGENDA_VOTE,
+                self.current_phase_ordering[self.active].player_type,
+            )
+        )
         self.agenda_vote_clock.start()
 
     def end_agenda_phase(self) -> None:

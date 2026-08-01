@@ -1,6 +1,12 @@
 from dataclasses import dataclass
+from enum import Enum, auto
 
 from ti_dash.domain.reference import Color, Context, Faction, Phase, StrategyCard
+
+
+class PlayerType(Enum):
+    DEFAULT = auto()
+    INEXPERIENCED = auto()
 
 
 @dataclass
@@ -13,6 +19,7 @@ class Player:
     strategy_card: StrategyCard | None = None
     passed: bool = False
     claim_token: str | None = None
+    player_type: PlayerType = PlayerType.DEFAULT
 
     @property
     def initiative(self) -> int:

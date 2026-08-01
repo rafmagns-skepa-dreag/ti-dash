@@ -76,9 +76,6 @@ class Faction(StrEnum):
     FIRMAMENT = "The Firmament/The Obsidian"
 
 
-class BudgetField: ...
-
-
 BUDGET_FIELDS: dict[Context, str] = {
     Context.STRATEGY_PICK: "strategy_pick_seconds",
     Context.ACTION: "action_seconds",

@@ -253,6 +253,20 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.score-controls {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.score-controls button {
+  min-height: 0;
+  min-width: 2rem;
+  padding: 0.15rem 0.5rem;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .player-card .card {
   display: block;
   font-size: 1.7rem;
@@ -342,6 +356,17 @@ button:active { transform: translateY(1px); }
 }
 
 #phasebar button.gate { margin-left: auto; }
+
+#phasebar button.change-speaker {
+  background: #f5c518;
+  color: #1a1500;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+#phasebar button.change-speaker:hover {
+  background: #ffd83d;
+}
 
 /* --- speaker modal ------------------------------------------------------ */
 .modal-backdrop {

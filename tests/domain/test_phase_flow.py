@@ -104,6 +104,6 @@ def test_new_round_resets_cards_passes_and_returns_to_strategy():
     g.new_round()
     assert g.round == 4
     assert all(p.strategy_card is None and not p.passed for p in g.players)
-    assert g.phase == Phase.Strategy and g.active is None
+    assert g.phase == Phase.Strategy and g.active == 0
     assert g.agenda_enabled_this_round is True
     assert g.strategy_pick_started is False

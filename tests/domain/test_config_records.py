@@ -1,13 +1,15 @@
 from ti_dash.domain.config import TimerConfig
-from ti_dash.domain.models import TurnRecord
+from ti_dash.domain.models import PlayerType, TurnRecord
 from ti_dash.domain.reference import Context, Phase
 
 
 def test_config_defaults_and_budget_lookup():
     c = TimerConfig()
     assert c.vp_goal == 10
-    assert c.budget_for(Context.ACTION) == c.action_seconds
-    assert c.budget_for(Context.AGENDA_VOTE) == c.agenda_vote_seconds
+    assert c.budget_for(Context.ACTION, PlayerType.DEFAULT) == c.action_seconds
+    assert (
+        c.budget_for(Context.AGENDA_VOTE, PlayerType.DEFAULT) == c.agenda_vote_seconds
+    )
 
 
 def test_turn_record_fields():
