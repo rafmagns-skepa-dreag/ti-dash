@@ -27,16 +27,16 @@ _GAME_KEYS = (
 
 
 def game_to_dict(game: Game) -> dict:
+    return game.to_dict()
     return {
-        "players": [{k: getattr(p, k) for k in _PLAYER_KEYS} for p in game.players],
-        **{k: getattr(game, k) for k in _GAME_KEYS},
         "config": asdict(game.config),
         "sequence": game._sequence,
     }
 
 
 def game_from_dict(data: dict) -> Game:
-    g = Game(players=[Player(**pd) for pd in data["players"]])
+    return Game.from_dict(data)
+    g = Game(players=[Player.from_dict(**pd) for pd in data["players"]])
     for k in _GAME_KEYS:
         setattr(g, k, data[k])
     valid = {f.name for f in fields(TimerConfig)}

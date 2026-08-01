@@ -22,6 +22,7 @@ def four_player_game() -> Game:
     )
     for player in g.players:
         g.claim_seat(player, f"d{player.seat}")
+    g.paused = False
     return g
 
 

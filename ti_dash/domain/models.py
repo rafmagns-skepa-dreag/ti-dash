@@ -18,6 +18,43 @@ class Player:
     def initiative(self) -> int:
         return self.strategy_card.value if self.strategy_card is not None else 99
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "faction": self.faction.value,
+            "color": self.color.name,
+            "seat": self.seat,
+            "vp": self.vp,
+            "strategy_card": self.strategy_card.name if self.strategy_card else None,
+            "passed": self.passed,
+            "claim_token": self.claim_token,
+        }
+
+    @staticmethod
+    def from_dict(
+        name: str,
+        faction: str,
+        color: str,
+        seat: int,
+        vp: int,
+        strategy_card: str | None,
+        passed: bool,
+        claim_token: str | None,
+    ):
+        parsed_faction = Faction(faction)
+        parsed_color = Color[color]
+        parsed_card = StrategyCard[strategy_card] if strategy_card is not None else None
+        return Player(
+            name,
+            parsed_faction,
+            parsed_color,
+            seat,
+            vp,
+            parsed_card,
+            passed,
+            claim_token,
+        )
+
 
 @dataclass
 class TurnRecord:

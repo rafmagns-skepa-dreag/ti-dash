@@ -2,6 +2,7 @@ import htpy
 from datastar_py.attributes import attribute_generator as d
 
 from ti_dash.domain.game import Game
+from ti_dash.domain.reference import Phase, StrategyCard
 
 
 def _on_click(expression: str) -> dict:
@@ -14,11 +15,76 @@ def _on_click(expression: str) -> dict:
     return dict(d.on("click", expression))
 
 
+def _card_picker(game: Game, p) -> htpy.Element | str:
+    if game.phase != Phase.Strategy or game.paused or p.strategy_card is not None:
+        return ""
+    taken = {pl.strategy_card for pl in game.players if pl.strategy_card is not None}
+    available = [c for c in StrategyCard if c not in taken]
+    return htpy.div(class_="card-picker")[
+        [
+            htpy.button(
+                _on_click(f"@post('/action/pick_card?seat={p.seat}&card={c.value}')"),
+                class_="pick-card",
+            )[c.name]
+            for c in available
+        ]
+    ]
+
+
+def _turn_controls(game: Game, p) -> htpy.Element | str:
+    if game.phase != Phase.Action or game.paused or game.active is None:
+        return ""
+    if game.current_phase_ordering[game.active].seat != p.seat:
+        return ""
+    return htpy.div(class_="turn-controls")[
+        htpy.button(
+            _on_click(f"@post('/action/end_turn?seat={p.seat}')"),
+            class_="end-turn",
+        )["End Turn"],
+        htpy.button(
+            _on_click(f"@post('/action/pass_turn?seat={p.seat}')"),
+            class_="pass-turn",
+        )["Pass"],
+    ]
+
+
+def _status_controls(game: Game, p) -> htpy.Element | str:
+    if game.phase != Phase.Status or game.paused or p.passed:
+        return ""
+    return htpy.div(class_="turn-controls")[
+        htpy.button(
+            _on_click(f"@post('/action/pass_status?seat={p.seat}')"),
+            class_="pass-turn",
+        )["Pass"],
+    ]
+
+
+def _vote_controls(game: Game, p) -> htpy.Element | str:
+    if game.phase != Phase.Agenda or game.paused or not game.agenda_vote_clock.running:
+        return ""
+    if game.active is None or game.current_phase_ordering[game.active].seat != p.seat:
+        return ""
+    return htpy.div(class_="vote-controls")[
+        htpy.button(
+            _on_click(f"@post('/action/cast_vote?seat={p.seat}')"),
+            class_="cast-vote",
+        )["Cast Vote"]
+    ]
+
+
+def _is_active(game: Game, p) -> bool:
+    return (
+        game.active is not None
+        and game.current_phase_ordering[game.active].seat == p.seat
+    )
+
+
 def player_card(game: Game, p) -> htpy.Element:
     claimed = p.claim_token is not None
     action = "release_seat" if claimed else "claim_seat"
+    classes = "player-card active-player" if _is_active(game, p) else "player-card"
     return htpy.div(
-        class_="player-card",
+        class_=classes,
         data_seat=str(p.seat),
         style=f"border-left-color:{p.color}",
     )[
@@ -32,4 +98,8 @@ def player_card(game: Game, p) -> htpy.Element:
             _on_click(f"@post('/action/{action}?seat={p.seat}')"),
             class_="claim",
         )["Release" if claimed else "Claim"],
+        _card_picker(game, p),
+        _turn_controls(game, p),
+        _status_controls(game, p),
+        _vote_controls(game, p),
     ]

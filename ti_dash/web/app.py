@@ -5,33 +5,35 @@ from datastar_py.litestar import DatastarResponse, read_signals
 from datastar_py.litestar import ServerSentEventGenerator as SSE
 from litestar import Litestar, Request, get, post
 from litestar.exceptions import HTTPException
+from litestar.params import FromQuery
 from litestar.response import Response
 
 from ti_dash.domain.game import Game
 from ti_dash.domain.models import Player
-from ti_dash.domain.reference import Color, Faction, Phase
+from ti_dash.domain.reference import Color, Faction, Phase, StrategyCard
 from ti_dash.persistence.db import Database
 from ti_dash.web import render
 from ti_dash.web.broadcast import Broadcaster
 from ti_dash.web.identity import ADMIN_COOKIE, DEVICE_COOKIE, new_device_id
 from ti_dash.web.styles import CSS
 
-PLAYERS = [
+PLAYERS = lambda: [
     Player("Imogen", Faction.NAALU, Color.GREEN, 0),
     Player("Pavle", Faction.RAL_NEL, Color.BLACK, 1),
-    Player("Gil", Faction.CRIMSON, Color.RED, 2),
-    Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
-    Player("Izzy", Faction.KELERES, Color.PINK, 4),
-    Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
-    Player("Dani!", Faction.BASTION, Color.YELLOW, 6),
-    Player("Summer", Faction.MUAAT, Color.ORANGE, 7),
+    # Player("Gil", Faction.CRIMSON, Color.RED, 2),
+    # Player("Jim", Faction.DEEPWROUGHT, Color.BLUE, 3),
+    # Player("Izzy", Faction.KELERES, Color.PINK, 4),
+    # Player("Rich", Faction.FIRMAMENT, Color.PURPLE, 5),
+    # Player("Dani!", Faction.BASTION, Color.YELLOW, 6),
+    # Player("Summer", Faction.MUAAT, Color.ORANGE, 7),
 ]
 
 
 class AppState:
     def __init__(self, db: Database) -> None:
         self.db = db
-        self.game = Game(players=PLAYERS)
+        self.game = Game(players=PLAYERS())
+        self.game.start_strategy_phase()
         self.broadcaster = Broadcaster()
         self.lock = asyncio.Lock()
 
@@ -40,6 +42,7 @@ class AppState:
             render.phasebar_fragment(self.game),
             render.timer_fragment(self.game),
             render.players_fragment(self.game),
+            render.speaker_modal_fragment(self.game),
         ]
 
     async def load(self) -> None:
@@ -99,9 +102,12 @@ def create_app(db_path: str) -> Litestar:
             yield SSE.patch_elements(render.phasebar_fragment(state.game))
             yield SSE.patch_elements(render.timer_fragment(state.game))
             yield SSE.patch_elements(render.players_fragment(state.game))
+            yield SSE.patch_elements(render.speaker_modal_fragment(state.game))
             try:
                 while True:
                     payload = await queue.get()
+                    if payload is None:  # shutdown sentinel
+                        break
                     for fragment in payload.split("\n"):
                         yield SSE.patch_elements(fragment)
             finally:
@@ -110,17 +116,21 @@ def create_app(db_path: str) -> Litestar:
         return DatastarResponse(stream())
 
     @post("/action/claim_seat")
-    async def claim_seat(request: Request, seat: int) -> Response:
+    async def claim_seat(request: Request, seat: FromQuery[int]) -> Response:
         did = device_id_of(request)
         return await _guarded(state, lambda g: g.claim_seat(g.players[seat], did))
 
     @post("/action/release_seat")
-    async def release_seat(request: Request, seat: int) -> Response:
+    async def release_seat(request: Request, seat: FromQuery[int]) -> Response:
         did = device_id_of(request)
         admin = is_admin_of(request)
         return await _guarded(
             state, lambda g: g.release_seat(g.players[seat], did, is_admin=admin)
         )
+
+    @post("/action/set_speaker")
+    async def set_speaker(seat: FromQuery[int]) -> Response:
+        return await _guarded(state, lambda g: g.set_speaker(g.players[seat]))
 
     @post("/action/toggle_pause")
     async def toggle_pause() -> Response:
@@ -140,36 +150,49 @@ def create_app(db_path: str) -> Litestar:
         )
 
     @post("/action/score")
-    async def score(request: Request, seat: int, delta: int) -> Response:
+    async def score(
+        request: Request, seat: FromQuery[int], delta: FromQuery[int]
+    ) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
         return await _guarded(
             state, lambda g: g.score(g.players[seat], delta, did, is_admin=admin)
         )
 
     @post("/action/pick_card")
-    async def pick_card(request: Request, seat: int, card: int) -> Response:
+    async def pick_card(
+        request: Request, seat: FromQuery[int], card: FromQuery[int]
+    ) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
         return await _guarded(
             state,
-            lambda g: g.pick_strategy_card(g.players[seat], card, did, is_admin=admin),
+            lambda g: g.pick_strategy_card(
+                g.players[seat], StrategyCard(card), did, is_admin=admin
+            ),
         )
 
     @post("/action/begin_pick")
-    async def begin_pick(request: Request, seat: int) -> Response:
+    async def begin_pick(request: Request, seat: FromQuery[int]) -> Response:
         return await _guarded(state, lambda g: g.begin_strategy_pick())
 
     @post("/action/end_turn")
-    async def end_turn(request: Request, seat: int) -> Response:
+    async def end_turn(request: Request, seat: FromQuery[int]) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
         return await _guarded(
             state, lambda g: g.end_turn(g.players[seat], did, is_admin=admin)
         )
 
     @post("/action/pass_turn")
-    async def pass_turn(request: Request, seat: int) -> Response:
+    async def pass_turn(request: Request, seat: FromQuery[int]) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
         return await _guarded(
             state, lambda g: g.pass_turn(g.players[seat], did, is_admin=admin)
+        )
+
+    @post("/action/pass_status")
+    async def pass_status(request: Request, seat: FromQuery[int]) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(
+            state, lambda g: g.pass_status(g.players[seat], did, is_admin=admin)
         )
 
     @post("/action/open_secondary")
@@ -189,14 +212,11 @@ def create_app(db_path: str) -> Litestar:
         return await _guarded(state, lambda g: g.close_agenda_window())
 
     @post("/action/begin_vote")
-    async def begin_vote(request: Request, seat: int) -> Response:
-        did, admin = device_id_of(request), is_admin_of(request)
-        return await _guarded(
-            state, lambda g: g.begin_agenda_vote(g.players[seat], did, is_admin=admin)
-        )
+    async def begin_vote() -> Response:
+        return await _guarded(state, lambda g: g.begin_agenda_vote())
 
     @post("/action/cast_vote")
-    async def cast_vote(request: Request, seat: int) -> Response:
+    async def cast_vote(request: Request, seat: FromQuery[int]) -> Response:
         did, admin = device_id_of(request), is_admin_of(request)
         return await _guarded(
             state, lambda g: g.cast_agenda_vote(g.players[seat], did, is_admin=admin)
@@ -210,6 +230,14 @@ def create_app(db_path: str) -> Litestar:
                 g, "agenda_enabled_this_round", not g.agenda_enabled_this_round
             ),
         )
+
+    @post("/action/end_status_phase")
+    async def end_status_phase() -> Response:
+        return await _guarded(state, lambda g: g.end_status_phase())
+
+    @post("/action/end_agenda_phase")
+    async def end_agenda_phase() -> Response:
+        return await _guarded(state, lambda g: g.end_agenda_phase())
 
     @post("/action/admin_login")
     async def admin_login(request: Request) -> Response:
@@ -228,6 +256,10 @@ def create_app(db_path: str) -> Litestar:
     async def _startup(app: Litestar) -> None:
         await state.load()
 
+    async def _shutdown(app: Litestar) -> None:
+        await state.broadcaster.close_all()
+        await state.db.close()
+
     return Litestar(
         route_handlers=[
             index,
@@ -235,6 +267,7 @@ def create_app(db_path: str) -> Litestar:
             events,
             claim_seat,
             release_seat,
+            set_speaker,
             toggle_pause,
             advance,
             debug_players,
@@ -243,6 +276,7 @@ def create_app(db_path: str) -> Litestar:
             begin_pick,
             end_turn,
             pass_turn,
+            pass_status,
             open_secondary,
             close_secondary,
             open_agenda_window,
@@ -250,10 +284,13 @@ def create_app(db_path: str) -> Litestar:
             begin_vote,
             cast_vote,
             toggle_agenda,
+            end_status_phase,
+            end_agenda_phase,
             admin_login,
             admin_logout,
         ],
         on_startup=[_startup],
+        on_shutdown=[_shutdown],
     )
 
 

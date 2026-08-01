@@ -1,5 +1,5 @@
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Final
 
 from ti_dash.domain.clock import Clock
@@ -18,6 +18,7 @@ class Game:
     awaiting_admin: bool = False
     active: int | None = None
     paused: bool = False
+    strategy_pick_started: bool = False
     agenda_enabled_this_round: bool = False
     config: TimerConfig = field(default_factory=TimerConfig)
     pending_records: list[TurnRecord] = field(default_factory=list)
@@ -32,6 +33,36 @@ class Game:
     _sequence: int = 0
     _resume_clocks: list = field(default_factory=list)
     _turn_no: int = 0
+
+    def __post_init__(self):
+        if self.players and all(p.passed for p in self.players):
+            self.awaiting_admin = True
+        self.paused = True
+
+    def to_dict(self) -> dict:
+        return {
+            "speaker_seat_number": self.speaker_seat_number,
+            "round": self.round,
+            "vp_goal": self.vp_goal,
+            "phase": self.phase.name,
+            "awaiting_admin": self.awaiting_admin,
+            "active": self.active,
+            "paused": self.paused,
+            "strategy_pick_started": self.strategy_pick_started,
+            "agenda_enabled_this_round": self.agenda_enabled_this_round,
+            "config": asdict(self.config),
+            "players": [p.to_dict() for p in self.players],
+            "_sequence": self._sequence,
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> Game:
+        data["players"] = [Player.from_dict(**pd) for pd in data["players"]]
+        data["phase"] = Phase[data["phase"]]
+        data["config"] = TimerConfig(**data["config"])
+        if "sequence" in data:
+            data["_sequence"] = data.pop("sequence")
+        return Game(**data)
 
     @property
     def speaker_order(self) -> list[Player]:
@@ -74,6 +105,9 @@ class Game:
             raise PermissionError("not your seat")
         player.claim_token = None
 
+    def set_speaker(self, player: Player) -> None:
+        self.speaker_seat_number = player.seat
+
     def authorize(
         self, player: Player, device_id: str | None, *, is_admin: bool
     ) -> None:
@@ -102,9 +136,13 @@ class Game:
 
     def resume(self) -> None:
         self.paused = False
-        for clock in self._resume_clocks:
-            clock.start()
-        self._resume_clocks = []
+        if self._resume_clocks:
+            for clock in self._resume_clocks:
+                clock.start()
+            self._resume_clocks = []
+            return
+        if self.phase == Phase.Strategy and not self.strategy_pick_started:
+            self.begin_strategy_pick()
 
     def _check_not_paused(self) -> None:
         if self.paused:
@@ -120,6 +158,7 @@ class Game:
         self.active = 0
         self.action_clock.reset(self.config.budget_for(Context.ACTION))
         self.action_clock.start()
+        self.unpass_players()
 
     def _current(self) -> Player | None:
         return (
@@ -171,7 +210,6 @@ class Game:
             self.active = None
             self.awaiting_admin = True
             return
-        print(nxt)
         self.active = nxt
         self.action_clock.reset(self.config.budget_for(Context.ACTION))
         self.action_clock.start()
@@ -195,6 +233,7 @@ class Game:
         player.vp = max(0, min(self.vp_goal, player.vp + delta))
 
     def begin_strategy_pick(self) -> None:
+        self.strategy_pick_started = True
         self.strategy_pick_clock.reset(self.config.budget_for(Context.STRATEGY_PICK))
         self.strategy_pick_clock.start()
 
@@ -214,6 +253,8 @@ class Game:
             turn=None,
             duration=self.strategy_pick_clock.elapsed(),
         )
+        if all(p.strategy_card is not None for p in self.players):
+            self.awaiting_admin = True
 
     def _record(
         self, context: Context, *, player, turn: int | None, duration: float
@@ -238,11 +279,14 @@ class Game:
         self.phase = Phase.Strategy
         self.awaiting_admin = False
         self.active = None
+        self.strategy_pick_started = False
+        self.unpass_players()
 
     def start_status_phase(self) -> None:
         self.phase = Phase.Status
         self.awaiting_admin = False
         self.active = None
+        self.unpass_players()
         self.status_clock.reset(self.config.budget_for(Context.STATUS))
         self.status_clock.start()
 
@@ -253,11 +297,27 @@ class Game:
         )
         self.awaiting_admin = True
 
+    def pass_status(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        player.passed = True
+        if all(p.passed for p in self.players):
+            self.end_status_phase()
+
     def start_agenda_phase(self) -> None:
         self.phase = Phase.Agenda
         self.awaiting_admin = False
+        self.unpass_players()
+
+    def _after_speaker(self) -> int:
+        # Agenda debate and voting start with the player after the speaker,
+        # so the speaker goes last.
+        return 1 % len(self.players)
 
     def open_agenda_window(self) -> None:
+        if self.agenda_vote_clock.running:
+            self.agenda_vote_clock.stop()
+        self.active = self._after_speaker()
         self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
         self.agenda_window_clock.start()
 
@@ -271,12 +331,17 @@ class Game:
         )
 
     def begin_agenda_vote(self) -> None:
+        if self.agenda_window_clock.running:
+            self.close_agenda_window()
+        self.active = self._after_speaker()
         self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
         self.agenda_vote_clock.start()
 
     def cast_agenda_vote(self, player, device_id=None, *, is_admin=False) -> None:
         self._check_not_paused()
         self.authorize(player, device_id, is_admin=is_admin)
+        if self._current() is not player:
+            raise PermissionError(f"it is not {player.name}'s turn to vote")
         self.agenda_vote_clock.stop()
         self._record(
             Context.AGENDA_VOTE,
@@ -284,6 +349,17 @@ class Game:
             turn=None,
             duration=self.agenda_vote_clock.elapsed(),
         )
+        self._advance_vote()
+
+    def _advance_vote(self) -> None:
+        assert self.active is not None
+        nxt = (self.active + 1) % len(self.players)
+        if nxt == self._after_speaker():
+            self.active = None
+            return
+        self.active = nxt
+        self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
+        self.agenda_vote_clock.start()
 
     def end_agenda_phase(self) -> None:
         self.awaiting_admin = True
@@ -291,13 +367,11 @@ class Game:
     def enable_agenda_phase(self) -> None:
         self.agenda_enabled_this_round = True
 
-    # TODO need to clear passed flags on every phase transition?
-
     def new_round(self) -> None:
         self.round += 1
+        self.unpass_players()
         for p in self.players:
             p.strategy_card = None
-            p.passed = False
         self.active = None
         for c in self._all_clocks():
             c.reset()
@@ -312,3 +386,7 @@ class Game:
         )
         self.players.append(player)
         return player
+
+    def unpass_players(self):
+        for player in self.players:
+            player.passed = False

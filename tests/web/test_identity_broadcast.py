@@ -25,3 +25,11 @@ async def test_unsubscribe_removes_queue():
     b.unsubscribe(q)
     assert b.count == 0
     await b.publish("x")  # no error with zero subscribers
+
+
+async def test_close_all_unblocks_subscribers_with_sentinel():
+    b = Broadcaster()
+    q1, q2 = b.subscribe(), b.subscribe()
+    await b.close_all()
+    assert await asyncio.wait_for(q1.get(), 1) is None
+    assert await asyncio.wait_for(q2.get(), 1) is None

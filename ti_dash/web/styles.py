@@ -75,6 +75,10 @@ h1 {
   letter-spacing: 0.02em;
 }
 
+#active-timer.overtime {
+  color: var(--warn);
+}
+
 /* --- players grid ------------------------------------------------------ */
 #players {
   display: grid;
@@ -92,6 +96,45 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.player-card.active-player {
+  position: relative;
+  z-index: 0;
+  animation: active-card-glow 3s ease-in-out infinite alternate;
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.player-card.active-player::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: calc(var(--radius) + 3px);
+  padding: 3px;
+  background: conic-gradient(
+    from var(--border-angle),
+    #ff3b3b, #ff9d3b, #f9ef3b, #3bff6a, #3bd4ff, #6a6aff, #d43bff, #ff3b3b
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: active-border-spin 5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes active-border-spin {
+  to { --border-angle: 360deg; }
+}
+
+@keyframes active-card-glow {
+  from { box-shadow: 0 0 6px 0 rgba(255, 255, 255, 0.08); }
+  to { box-shadow: 0 0 20px 3px rgba(255, 255, 255, 0.22); }
 }
 
 .player-card .name {
@@ -154,6 +197,45 @@ button:active { transform: translateY(1px); }
 
 .player-card button.claim { margin-top: 0.25rem; }
 
+.card-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.card-picker button.pick-card {
+  padding: 0.35rem 0.6rem;
+  min-height: 0;
+  font-size: 0.78rem;
+}
+
+.turn-controls {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.turn-controls button.end-turn {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.vote-controls {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.vote-controls button.cast-vote {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+  font-weight: 600;
+}
+
 #phasebar button.pause,
 #phasebar button.gate {
   background: var(--accent);
@@ -163,4 +245,47 @@ button:active { transform: translateY(1px); }
 }
 
 #phasebar button.gate { margin-left: auto; }
+
+/* --- speaker modal ------------------------------------------------------ */
+.modal-backdrop {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.modal-list button.speaker-choice {
+  text-align: left;
+}
+
+.modal button.modal-close {
+  align-self: flex-end;
+}
 """

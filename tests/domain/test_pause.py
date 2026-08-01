@@ -85,3 +85,27 @@ def test_pause_stops_all_running_clocks_and_resume_restarts_them(monkeypatch):
     t[0] = 110.0
     assert g.action_clock.elapsed() == 40.0
     assert g.secondary_clock.elapsed() == 40.0
+
+
+def test_resume_starts_strategy_pick_when_not_yet_started():
+    """resume() on a fresh/not-started Strategy phase kicks off the pick clock,
+    since there's nothing captured in _resume_clocks to fall back on."""
+    g = Game()
+    g.start_strategy_phase()
+    assert g.paused is True
+    assert g.strategy_pick_started is False
+
+    g.resume()
+
+    assert g.paused is False
+    assert g.strategy_pick_started is True
+    assert g.strategy_pick_clock.running is True
+
+
+def test_resume_does_not_restart_strategy_pick_once_already_started():
+    g = Game()
+    g.start_strategy_phase()
+    g.begin_strategy_pick()
+    g.pause()
+    g.resume()
+    assert g.strategy_pick_clock.running is True

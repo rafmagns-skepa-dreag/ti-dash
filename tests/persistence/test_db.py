@@ -1,47 +1,52 @@
+from typing import AsyncGenerator
+
 import pytest
 
 from ti_dash.domain.game import Game
 from ti_dash.domain.models import TurnRecord
+from ti_dash.domain.reference import Context, Phase
 from ti_dash.persistence.db import Database
 
 
 @pytest.fixture
-async def db(tmp_path):
+async def db(tmp_path) -> AsyncGenerator[Database]:
     d = Database(str(tmp_path / "t.db"))
     await d.connect()
     yield d
     await d.close()
 
 
-async def test_connect_creates_tables_and_empty_snapshot(db):
+async def test_connect_creates_tables_and_empty_snapshot(db: Database):
     assert await db.load_snapshot() is None
     assert await db.load_records() == []
 
 
-async def test_save_and_load_snapshot(db):
+async def test_save_and_load_snapshot(db: Database):
     g = Game()
     g.add_player("Ana", "The Nomad", "Red")
     g.round = 4
     await db.save_snapshot(g)
     loaded = await db.load_snapshot()
+    assert loaded
     assert loaded.round == 4
     assert loaded.players[0].name == "Ana"
 
 
-async def test_snapshot_is_single_row_upsert(db):
+async def test_snapshot_is_single_row_upsert(db: Database):
     g = Game()
     g.round = 1
     await db.save_snapshot(g)
     g.round = 2
     await db.save_snapshot(g)
     loaded = await db.load_snapshot()
+    assert loaded
     assert loaded.round == 2
 
 
-async def test_append_and_load_records(db):
+async def test_append_and_load_records(db: Database):
     recs = [
-        TurnRecord(1, 1, 0, "Action", "action", "Ana", 0, 30.0, False, 100.0),
-        TurnRecord(2, 1, 1, "Action", "action", "Bo", 1, 200.0, True, 160.0),
+        TurnRecord(1, 1, 0, Phase.Action, Context.ACTION, "Ana", 0, 30.0, False, 100.0),
+        TurnRecord(2, 1, 1, Phase.Action, Context.ACTION, "Bo", 1, 200.0, True, 160.0),
     ]
     await db.append_records(recs)
     loaded = await db.load_records()
@@ -57,7 +62,7 @@ async def test_reconnect_keeps_records_and_snapshot(tmp_path):
     g.round = 9
     await d1.save_snapshot(g)
     await d1.append_records(
-        [TurnRecord(1, 9, 0, "Action", "action", "Ana", 0, 5.0, False, 1.0)]
+        [TurnRecord(1, 9, 0, Phase.Action, Context.ACTION, "Ana", 0, 5.0, False, 1.0)]
     )
     await d1.close()
     d2 = Database(path)
