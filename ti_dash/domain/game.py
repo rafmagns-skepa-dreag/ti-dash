@@ -87,6 +87,15 @@ class Game:
             case _ as e:
                 raise RuntimeError(f"Unknown phase {e}")
 
+    @property
+    def next_player(self) -> Player | None:
+        if self.active is None:
+            return None
+        idx = self._find_next_unpassed_player()
+        if idx is None or idx == self.active:
+            return None
+        return self.current_phase_ordering[idx]
+
     def initiative_order(self) -> list[Player]:
         return sorted(self.players, key=lambda p: p.initiative)
 

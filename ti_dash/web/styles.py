@@ -164,9 +164,12 @@ h1 {
 .player-card.active-player::before {
   content: "";
   position: absolute;
-  inset: -3px;
+  /* Active player's own border-left is skipped (see player_card), so this
+     ring has nothing to overlap; a small gap keeps it looking separate
+     from the card. */
+  inset: -6px;
   z-index: -1;
-  border-radius: calc(var(--radius) + 3px);
+  border-radius: calc(var(--radius) + 6px);
   padding: 3px;
   background: conic-gradient(
     from var(--border-angle),
@@ -186,6 +189,31 @@ h1 {
 @keyframes active-card-glow {
   from { box-shadow: 0 0 6px 0 rgba(255, 255, 255, 0.08); }
   to { box-shadow: 0 0 20px 3px rgba(255, 255, 255, 0.22); }
+}
+
+.player-card.next-player {
+  position: relative;
+  z-index: 0;
+}
+
+.player-card.next-player::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: calc(var(--radius) + 6px);
+  padding: 3px;
+  background: var(--accent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: next-player-pulse 3s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes next-player-pulse {
+  from { opacity: 0.3; }
+  to { opacity: 0.7; }
 }
 
 .player-card .name-line {

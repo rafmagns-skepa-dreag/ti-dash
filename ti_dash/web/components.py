@@ -153,6 +153,10 @@ def _is_active(game: Game, p) -> bool:
     )
 
 
+def _is_next(game: Game, p) -> bool:
+    return game.next_player is not None and game.next_player.seat == p.seat
+
+
 def _initiative_badge(game: Game, p) -> htpy.Element | str:
     if game.phase not in (Phase.Action, Phase.Status):
         return ""
@@ -163,16 +167,22 @@ def _initiative_badge(game: Game, p) -> htpy.Element | str:
 def player_card(game: Game, p) -> htpy.Element:
     claimed = p.claim_token is not None
     action = "release_seat" if claimed else "claim_seat"
+    is_active = _is_active(game, p)
     classes = "player-card"
-    if _is_active(game, p):
+    if is_active:
         classes += " active-player"
+    elif _is_next(game, p):
+        classes += " next-player"
     if p.passed:
         classes += " is-passed"
     color = _display_color(p)
+    # The active-player glow ring paints over the card's own border, so
+    # skip the faction-color border-left rather than let it peek through.
+    border_left = "transparent" if is_active else color
     return htpy.div(
         class_=classes,
         data_seat=str(p.seat),
-        style=f"border-left-color:{color}",
+        style=f"border-left-color:{border_left}",
     )[
         htpy.div(class_="name-line")[
             htpy.span(class_="name", style=f"color:{color}")[p.name],
