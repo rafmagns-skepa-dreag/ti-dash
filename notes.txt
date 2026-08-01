@@ -1,0 +1,10 @@
+* admin needs to be able to un-set strategy card
+* admin needs to be able to un-pass for a person
+* active player needs to be highlighted. Probably also should print their name big on the screen
+* status phase doesn't have a pass button
+* cards should reorder by who goes first
+* TODO NAALU 0 initiative
+* agenda voting needs to happen in speaker order
+* begin vote + vote doesn't seem to work correctly. just another phase type
+* strategy cards need to be chosen in speaker order
+* should print order number large
