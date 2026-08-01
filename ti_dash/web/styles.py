@@ -40,6 +40,54 @@ h1 {
   text-transform: uppercase;
 }
 
+/* --- admin bar ----------------------------------------------------------- */
+#admin-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}
+
+.admin-badge {
+  background: var(--warn);
+  color: #fff;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.admin-password {
+  font: inherit;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+
+/* --- admin-only player controls ----------------------------------------- */
+.card-picker.admin-only {
+  border-top: 1px dashed var(--line);
+  padding-top: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.admin-controls {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.admin-controls button.admin-pass,
+.admin-controls button.admin-unpass,
+.card-picker.admin-only button.unset-card {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
 /* --- phase bar --------------------------------------------------------- */
 #phasebar {
   position: sticky;

@@ -170,6 +170,27 @@ def create_app(db_path: str) -> Litestar:
             ),
         )
 
+    @post("/action/unset_card")
+    async def unset_card(request: Request, seat: FromQuery[int]) -> Response:
+        admin = is_admin_of(request)
+        return await _guarded(
+            state, lambda g: g.unset_strategy_card(g.players[seat], is_admin=admin)
+        )
+
+    @post("/action/admin_pass")
+    async def admin_pass(request: Request, seat: FromQuery[int]) -> Response:
+        admin = is_admin_of(request)
+        return await _guarded(
+            state, lambda g: g.set_passed(g.players[seat], True, is_admin=admin)
+        )
+
+    @post("/action/admin_unpass")
+    async def admin_unpass(request: Request, seat: FromQuery[int]) -> Response:
+        admin = is_admin_of(request)
+        return await _guarded(
+            state, lambda g: g.set_passed(g.players[seat], False, is_admin=admin)
+        )
+
     @post("/action/begin_pick")
     async def begin_pick(request: Request, seat: FromQuery[int]) -> Response:
         return await _guarded(state, lambda g: g.begin_strategy_pick())
@@ -273,6 +294,9 @@ def create_app(db_path: str) -> Litestar:
             debug_players,
             score,
             pick_card,
+            unset_card,
+            admin_pass,
+            admin_unpass,
             begin_pick,
             end_turn,
             pass_turn,

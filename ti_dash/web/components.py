@@ -15,19 +15,42 @@ def _on_click(expression: str) -> dict:
     return dict(d.on("click", expression))
 
 
+def _on_submit(expression: str) -> dict:
+    """Datastar submit handler with preventDefault, so forms don't navigate."""
+    return dict(d.on("submit", expression).prevent)
+
+
 def _card_picker(game: Game, p) -> htpy.Element | str:
-    if game.phase != Phase.Strategy or game.paused or p.strategy_card is not None:
+    if game.phase != Phase.Strategy or game.paused:
         return ""
     taken = {pl.strategy_card for pl in game.players if pl.strategy_card is not None}
-    available = [c for c in StrategyCard if c not in taken]
-    return htpy.div(class_="card-picker")[
+    if p.strategy_card is None:
+        available = [c for c in StrategyCard if c not in taken]
+        return htpy.div(class_="card-picker")[
+            [
+                htpy.button(
+                    _on_click(
+                        f"@post('/action/pick_card?seat={p.seat}&card={c.value}')"
+                    ),
+                    class_="pick-card",
+                )[c.name]
+                for c in available
+            ]
+        ]
+    # Player already holds a card: only admin may reassign or clear it.
+    reassignable = [c for c in StrategyCard if c not in taken or c is p.strategy_card]
+    return htpy.div(dict(d.show("$isAdmin")), class_="card-picker admin-only")[
         [
             htpy.button(
                 _on_click(f"@post('/action/pick_card?seat={p.seat}&card={c.value}')"),
                 class_="pick-card",
             )[c.name]
-            for c in available
-        ]
+            for c in reassignable
+        ],
+        htpy.button(
+            _on_click(f"@post('/action/unset_card?seat={p.seat}')"),
+            class_="unset-card",
+        )["Unset"],
     ]
 
 
@@ -72,6 +95,27 @@ def _vote_controls(game: Game, p) -> htpy.Element | str:
     ]
 
 
+def _admin_pass_toggle(game: Game, p) -> htpy.Element | str:
+    if game.phase not in (Phase.Action, Phase.Status) or game.paused:
+        return ""
+    if p.passed:
+        return htpy.button(
+            _on_click(f"@post('/action/admin_unpass?seat={p.seat}')"),
+            class_="admin-unpass",
+        )["Un-pass"]
+    return htpy.button(
+        _on_click(f"@post('/action/admin_pass?seat={p.seat}')"),
+        class_="admin-pass",
+    )["Pass"]
+
+
+def _admin_controls(game: Game, p) -> htpy.Element | str:
+    toggle = _admin_pass_toggle(game, p)
+    if not toggle:
+        return ""
+    return htpy.div(dict(d.show("$isAdmin")), class_="admin-controls")[toggle]
+
+
 def _is_active(game: Game, p) -> bool:
     return (
         game.active is not None
@@ -102,4 +146,5 @@ def player_card(game: Game, p) -> htpy.Element:
         _turn_controls(game, p),
         _status_controls(game, p),
         _vote_controls(game, p),
+        _admin_controls(game, p),
     ]

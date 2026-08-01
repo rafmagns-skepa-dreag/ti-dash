@@ -256,6 +256,30 @@ class Game:
         if all(p.strategy_card is not None for p in self.players):
             self.awaiting_admin = True
 
+    def unset_strategy_card(self, player: Player, *, is_admin: bool = False) -> None:
+        if not is_admin:
+            raise PermissionError("only admin can unset a strategy card")
+        player.strategy_card = None
+        self.awaiting_admin = False
+
+    def set_passed(self, player: Player, passed: bool, *, is_admin: bool = False) -> None:
+        if not is_admin:
+            raise PermissionError("only admin can change pass status")
+        player.passed = passed
+        if passed or not self.awaiting_admin:
+            return
+        # The round had gated on everyone passing; bring the un-passed
+        # player back into rotation instead of leaving the gate stuck.
+        if self.phase == Phase.Action:
+            self.awaiting_admin = False
+            self.active = self.current_phase_ordering.index(player)
+            self.action_clock.reset(self.config.budget_for(Context.ACTION))
+            self.action_clock.start()
+        elif self.phase == Phase.Status:
+            self.awaiting_admin = False
+            self.status_clock.reset(self.config.budget_for(Context.STATUS))
+            self.status_clock.start()
+
     def _record(
         self, context: Context, *, player, turn: int | None, duration: float
     ) -> None:

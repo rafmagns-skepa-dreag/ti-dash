@@ -5,7 +5,7 @@ from datastar_py.attributes import attribute_generator as d
 
 from ti_dash.domain.game import Game
 from ti_dash.domain.reference import Phase
-from ti_dash.web.components import _on_click, player_card
+from ti_dash.web.components import _on_click, _on_submit, player_card
 
 DATASTAR_SRC = (
     "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0/bundles/datastar.js"
@@ -69,6 +69,53 @@ def speaker_modal_fragment(game: Game) -> str:
             ]
         ]
     )
+
+
+def admin_bar(is_admin: bool) -> htpy.Element:
+    if is_admin:
+        controls = [
+            htpy.span(class_="admin-badge")["Admin"],
+            htpy.button(
+                _on_click("@post('/action/admin_logout'); window.location.reload()"),
+                class_="admin-logout",
+            )["Log out"],
+        ]
+    else:
+        controls = [
+            htpy.button(
+                _on_click("$adminModalOpen = true"), class_="admin-login-open"
+            )["Admin"]
+        ]
+    return htpy.div(id="admin-bar")[controls]
+
+
+def admin_login_modal() -> htpy.Element:
+    submit = (
+        "@post('/action/admin_login'); "
+        "$adminModalOpen = false; "
+        "window.location.reload()"
+    )
+    return htpy.div(
+        dict(d.show("$adminModalOpen")),
+        id="admin-modal",
+        class_="modal-backdrop",
+    )[
+        htpy.div(class_="modal")[
+            htpy.h2["Admin login"],
+            htpy.form(_on_submit(submit))[
+                htpy.input(
+                    dict(d.bind("password")),
+                    type="password",
+                    placeholder="Password",
+                    class_="admin-password",
+                ),
+                htpy.button(type="submit", class_="admin-login-submit")["Log in"],
+            ],
+            htpy.button(
+                _on_click("$adminModalOpen = false"), class_="modal-close"
+            )["Cancel"],
+        ]
+    ]
 
 
 def _phase_controls(game: Game) -> list:
@@ -158,13 +205,23 @@ def full_page(game: Game, *, is_admin: bool) -> str:
     # element, opening the SSE stream that patches the three empty divs below.
     shell = htpy.body(
         dict(d.init("@get('/events')")),
-        dict(d.signals(now="Date.now()", speakerModalOpen=False)),
+        dict(
+            d.signals(
+                now="Date.now()",
+                speakerModalOpen=False,
+                isAdmin=is_admin,
+                adminModalOpen=False,
+                password="",
+            )
+        ),
         dict(d.on_interval("$now = Date.now()")),
     )[
         htpy.h1["TI4 Dashboard"],
+        admin_bar(is_admin),
         htpy.div(id="phasebar")[""],
         htpy.div(id="active-timer")[""],
         htpy.div(id="players")[""],
         htpy.div(id="speaker-modal")[""],
+        admin_login_modal(),
     ]
     return str(htpy.html[head, shell])
