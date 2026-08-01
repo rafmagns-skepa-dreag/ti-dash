@@ -232,6 +232,22 @@ def create_app(db_path: str) -> Litestar:
     async def close_agenda_window() -> Response:
         return await _guarded(state, lambda g: g.close_agenda_window())
 
+    @post("/action/agenda_next_turn")
+    async def agenda_next_turn(request: Request, seat: FromQuery[int]) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(
+            state,
+            lambda g: g.end_agenda_window_turn(g.players[seat], did, is_admin=admin),
+        )
+
+    @post("/action/agenda_pass")
+    async def agenda_pass(request: Request, seat: FromQuery[int]) -> Response:
+        did, admin = device_id_of(request), is_admin_of(request)
+        return await _guarded(
+            state,
+            lambda g: g.pass_agenda_window(g.players[seat], did, is_admin=admin),
+        )
+
     @post("/action/begin_vote")
     async def begin_vote() -> Response:
         return await _guarded(state, lambda g: g.begin_agenda_vote())
@@ -303,6 +319,8 @@ def create_app(db_path: str) -> Litestar:
             close_secondary,
             open_agenda_window,
             close_agenda_window,
+            agenda_next_turn,
+            agenda_pass,
             begin_vote,
             cast_vote,
             toggle_agenda,

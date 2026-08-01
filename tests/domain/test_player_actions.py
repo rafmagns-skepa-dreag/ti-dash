@@ -27,7 +27,7 @@ def test_set_speaker_updates_seat_number_and_order():
     g.claim_seat(bo, "d2")
     g.set_speaker(bo)
     assert g.speaker_seat_number == bo.seat
-    assert g.speaker_order[0] is bo
+    assert g.speaker_order()[0] is bo
 
 
 def test_score_requires_authorization():

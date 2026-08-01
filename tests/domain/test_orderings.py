@@ -24,7 +24,7 @@ def test_initiative_defaults_last_when_no_card():
 def test_seating_order_rotates_to_speaker():
     g = make_game()
     g.speaker_seat_number = 2  # Cass is Speaker
-    assert [p.name for p in g.speaker_order] == ["Cass", "Dev", "Ana", "Bo"]
+    assert [p.name for p in g.speaker_order()] == ["Cass", "Dev", "Ana", "Bo"]
 
 
 def test_initiative_order_by_card_number():
@@ -39,4 +39,4 @@ def test_initiative_order_by_card_number():
 def test_seating_order_falls_back_when_speaker_seat_absent():
     g = make_game()
     g.speaker_seat_number = 99  # No such seat
-    assert [p.name for p in g.speaker_order] == ["Ana", "Bo", "Cass", "Dev"]
+    assert [p.name for p in g.speaker_order()] == ["Ana", "Bo", "Cass", "Dev"]

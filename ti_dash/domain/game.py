@@ -196,17 +196,8 @@ class Game:
 
     def _advance_action(self) -> None:
         self._turn_no += 1
-        assert self.active is not None
-        start = self.active + 1
 
-        current_order = self.current_phase_ordering
-        nxt = None
-        for i in range(len(self.players)):
-            possible = (start + i) % len(self.players)
-            if not current_order[possible].passed:
-                nxt = possible
-                break
-
+        nxt = self._find_next_unpassed_player()
         if nxt is None:
             self.action_clock.stop()
             self.active = None
@@ -283,6 +274,8 @@ class Game:
             self.awaiting_admin = False
             self.status_clock.reset(self.config.budget_for(Context.STATUS))
             self.status_clock.start()
+        if self.active and self.current_phase_ordering[self.active] is player:
+            self.active = self._find_next_unpassed_player()
 
     def _record(
         self, context: Context, *, player, turn: int | None, duration: float
@@ -337,16 +330,14 @@ class Game:
         self.awaiting_admin = False
         self.unpass_players()
 
-    def _after_speaker(self) -> int:
-        # Agenda debate and voting start with the player after the speaker,
-        # so the speaker goes last.
-        return 1 % len(self.players)
-
     def open_agenda_window(self) -> None:
         if self.agenda_vote_clock.running:
             self.agenda_vote_clock.stop()
+        # Debate order tracks its own pass state via `player.passed`, kept
+        # separate from vote eligibility by resetting it here and again in
+        # begin_agenda_vote().
+        self.unpass_players()
         self.active = 0
-        # self.active = self._after_speaker()
         self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
         self.agenda_window_clock.start()
 
@@ -359,10 +350,29 @@ class Game:
             duration=self.agenda_window_clock.elapsed(),
         )
 
+    def end_agenda_window_turn(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        self._advance_agenda_window()
+
+    def pass_agenda_window(self, player, device_id=None, *, is_admin=False) -> None:
+        self._check_not_paused()
+        self.authorize(player, device_id, is_admin=is_admin)
+        player.passed = True
+        self._advance_agenda_window()
+
+    def _advance_agenda_window(self) -> None:
+        self.active = self._find_next_unpassed_player()
+        if self.active is None:
+            self.agenda_window_clock.stop()
+            return
+        self.agenda_window_clock.reset(self.config.budget_for(Context.AGENDA_WINDOW))
+        self.agenda_window_clock.start()
+
     def begin_agenda_vote(self) -> None:
+        self.unpass_players()
         if self.agenda_window_clock.running:
             self.close_agenda_window()
-        # self.active = self._after_speaker()
         self.active = 0
         self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
         self.agenda_vote_clock.start()
@@ -379,15 +389,27 @@ class Game:
             turn=None,
             duration=self.agenda_vote_clock.elapsed(),
         )
+        player.passed = True
         self._advance_vote()
+
+    def _find_next_unpassed_player(self) -> int | None:
+        assert self.active is not None
+        start = self.active + 1
+
+        current_order = self.current_phase_ordering
+        nxt = None
+        for i in range(len(self.players)):
+            possible = (start + i) % len(self.players)
+            if not current_order[possible].passed:
+                nxt = possible
+                break
+        return nxt
 
     def _advance_vote(self) -> None:
         assert self.active is not None
-        nxt = (self.active + 1) % len(self.players)
-        if nxt == self._after_speaker():
-            self.active = None
+        self.active = self._find_next_unpassed_player()
+        if self.active is None:
             return
-        self.active = nxt
         self.agenda_vote_clock.reset(self.config.budget_for(Context.AGENDA_VOTE))
         self.agenda_vote_clock.start()
 

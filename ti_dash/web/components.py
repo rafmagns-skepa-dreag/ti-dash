@@ -2,7 +2,16 @@ import htpy
 from datastar_py.attributes import attribute_generator as d
 
 from ti_dash.domain.game import Game
-from ti_dash.domain.reference import Phase, StrategyCard
+from ti_dash.domain.reference import Color, Phase, StrategyCard
+
+# CSS-only override: raw `black` is nearly invisible against the dark panel
+# background, so give that player color a legible display shade.
+# _DISPLAY_COLOR = {Color.BLACK: "#c7cbd1"}
+_DISPLAY_COLOR = {}
+
+
+def _display_color(p) -> str:
+    return _DISPLAY_COLOR.get(p.color, p.color)
 
 
 def _on_click(expression: str) -> dict:
@@ -82,6 +91,27 @@ def _status_controls(game: Game, p) -> htpy.Element | str:
     ]
 
 
+def _agenda_window_controls(game: Game, p) -> htpy.Element | str:
+    if (
+        game.phase != Phase.Agenda
+        or game.paused
+        or not game.agenda_window_clock.running
+    ):
+        return ""
+    if game.active is None or game.current_phase_ordering[game.active].seat != p.seat:
+        return ""
+    return htpy.div(class_="turn-controls")[
+        htpy.button(
+            _on_click(f"@post('/action/agenda_next_turn?seat={p.seat}')"),
+            class_="end-turn",
+        )["Next Turn"],
+        htpy.button(
+            _on_click(f"@post('/action/agenda_pass?seat={p.seat}')"),
+            class_="pass-turn",
+        )["Pass"],
+    ]
+
+
 def _vote_controls(game: Game, p) -> htpy.Element | str:
     if game.phase != Phase.Agenda or game.paused or not game.agenda_vote_clock.running:
         return ""
@@ -123,24 +153,40 @@ def _is_active(game: Game, p) -> bool:
     )
 
 
+def _initiative_badge(game: Game, p) -> htpy.Element | str:
+    if game.phase not in (Phase.Action, Phase.Status):
+        return ""
+    value = "—" if p.initiative == 99 else p.initiative
+    return htpy.span(class_="initiative")[f"Initiative {value}"]
+
+
 def player_card(game: Game, p) -> htpy.Element:
     claimed = p.claim_token is not None
     action = "release_seat" if claimed else "claim_seat"
-    classes = "player-card active-player" if _is_active(game, p) else "player-card"
+    classes = "player-card"
+    if _is_active(game, p):
+        classes += " active-player"
+    if p.passed:
+        classes += " is-passed"
+    color = _display_color(p)
     return htpy.div(
         class_=classes,
         data_seat=str(p.seat),
-        style=f"border-left-color:{p.color}",
+        style=f"border-left-color:{color}",
     )[
-        htpy.span(class_="swatch", style=f"background:{p.color}")[""],
-        htpy.span(class_="name")[p.name],
-        htpy.span(class_="speaker-badge")[
-            "SPEAKER" if p.seat == game.speaker_seat_number else ""
+        htpy.div(class_="name-line")[
+            htpy.span(class_="name", style=f"color:{color}")[p.name],
+            htpy.span(class_="speaker-tag")[
+                "- SPEAKER" if p.seat == game.speaker_seat_number else ""
+            ],
         ],
         htpy.span(class_="faction")[p.faction],
-        htpy.span(class_="vp")[f"VP {p.vp}"],
         htpy.span(class_="card")[p.strategy_card.name if p.strategy_card else "—"],
-        htpy.span(class_="passed")["passed" if p.passed else ""],
+        _initiative_badge(game, p),
+        htpy.div(class_="vp-line")[
+            htpy.span(class_="vp")[f"VP {p.vp}"],
+            # htpy.span(class_="passed")["passed" if p.passed else ""],
+        ],
         htpy.button(
             _on_click(f"@post('/action/{action}?seat={p.seat}')"),
             class_="claim",
@@ -148,6 +194,7 @@ def player_card(game: Game, p) -> htpy.Element:
         _card_picker(game, p),
         _turn_controls(game, p),
         _status_controls(game, p),
+        _agenda_window_controls(game, p),
         _vote_controls(game, p),
         _admin_controls(game, p),
     ]

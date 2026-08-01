@@ -8,7 +8,7 @@ is also cacheable by the browser.
 CSS = """
 :root {
   --bg: #0f1117;
-  --panel: #181b24;
+  --panel: #2b303e;
   --panel-2: #20242f;
   --line: #2c313d;
   --text: #e7e9ee;
@@ -128,7 +128,7 @@ h1 {
 /* --- players grid ------------------------------------------------------ */
 #players {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 0.75rem;
   padding: 0 1rem;
 }
@@ -142,6 +142,11 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.player-card.is-passed {
+  opacity: 0.5;
+  filter: grayscale(1);
 }
 
 .player-card.active-player {
@@ -183,36 +188,35 @@ h1 {
   to { box-shadow: 0 0 20px 3px rgba(255, 255, 255, 0.22); }
 }
 
+.player-card .name-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .player-card .name {
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-weight: 800;
+  font-size: 1.5rem;
 }
 
-.player-card .swatch {
-  display: inline-block;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  vertical-align: middle;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-.player-card .speaker-badge:not(:empty) {
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 0.7rem;
+.player-card .speaker-tag:not(:empty) {
+  color: #facc15;
   font-weight: 700;
+  font-size: 1.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  margin-left: 0.5rem;
+  letter-spacing: 0.03em;
 }
 
 .player-card .faction {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+}
+
+.player-card .vp-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .player-card .vp {
@@ -222,13 +226,20 @@ h1 {
 }
 
 .player-card .card {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.player-card .initiative {
   display: inline-block;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 .player-card .passed:not(:empty) {
-  align-self: flex-start;
   background: var(--warn);
   color: #fff;
   font-size: 0.7rem;
